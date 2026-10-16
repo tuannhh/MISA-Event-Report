@@ -5,6 +5,7 @@ test('roles, forced password, membership Excel, tenant grants, snapshots, modes 
  async function req(path,{cookie=superCookie,method='GET',body,status=200}={}){const r=await fetch(origin+path,{method,headers:{Cookie:cookie,...(body instanceof FormData?{}:{'Content-Type':'application/json'})},body:body?body instanceof FormData?body:JSON.stringify(body):undefined});const data=await r.json();assert.equal(r.status,status,`${method} ${path}: ${JSON.stringify(data)}`);return {data,cookie:r.headers.get('set-cookie')?.split(';')[0]};}
  const post=(path,body,opts={})=>req(path,{method:'POST',body,...opts});
  await req('/api/events',{cookie:'',status:401});
+ for(const path of ['/log-in','/su-kien','/change-password']){const page=await fetch(origin+path);assert.equal(page.status,200);assert.match(await page.text(),/assets\/index/);}
  const initial=process.env.TEST_PASSWORD,changed='QA-Changed-2026!';
  let auth=await fetch(origin+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:process.env.TEST_EMAIL,password:initial})});
  if(!auth.ok)auth=await fetch(origin+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:process.env.TEST_EMAIL,password:changed})});assert.equal(auth.status,200);superCookie=auth.headers.get('set-cookie').split(';')[0];
@@ -36,6 +37,6 @@ test('roles, forced password, membership Excel, tenant grants, snapshots, modes 
  const comparison=(await req(A+'/report?from=2026-10-14&to=2026-10-14&compareFrom=2026-10-15&compareTo=2026-10-15')).data;assert.equal(comparison.current.total,1);assert.equal(comparison.comparison.total,2);
  await req(B+'/report?snapshot='+snapshot,{status:404});await req(A+'/report?sourceFilters=%7Bbad',{status:400});
  const exported=await fetch(origin+A+'/export.xlsx?mode=online',{headers:{Cookie:editor}});assert.equal(exported.status,200);const book=new ExcelJS.Workbook();await book.xlsx.load(Buffer.from(await exported.arrayBuffer()));assert.equal(book.getWorksheet('Hình thức').getCell('B2').value,1);
- const member=(await req(A+'/members')).data.find(m=>m.email===`editor-${suffix}@misa.com.vn`);await req(A+'/members/'+member.id,{method:'DELETE',cookie:admin});await req(A+'/settings',{method:'PUT',body:settings,cookie:editor,status:403});await req(B+'/settings',{method:'PUT',body:settings,cookie:editor});
+ const member=(await req(A+'/members')).data.find(m=>m.email===`editor-${suffix}@misa.com.vn`);await req(A+'/members/'+member.id,{method:'DELETE',cookie:admin});await req(A+'/settings',{method:'PUT',body:settings,cookie:editor,status:403});await req(B+'/settings',{method:'PUT',body:settings,cookie:editor});const rights=(await req('/api/events',{cookie:editor})).data;assert.equal(rights.find(e=>e.id===a.id).role,'viewer');assert.equal(rights.find(e=>e.id===b.id).role,'editor');
  await post('/api/logout',{}, {cookie:editor});await req('/api/me',{cookie:editor,status:401});
 });

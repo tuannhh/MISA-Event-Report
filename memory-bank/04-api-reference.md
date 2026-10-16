@@ -14,6 +14,8 @@ JSON errors `{error}`. API cần session cookie trừ health/login. R = mọi us
 
 User must_change_password chỉ dùng me/logout/password; route còn lại403. Không có accept-invite/join/invite nữa. Không signup công khai.
 
+Browser GET `/log-in`, `/su-kien`, `/change-password` trả SPA shell, không trả dữ liệu bảo vệ. Client chuẩn hóa URL theo session: chưa đăng nhập → `/log-in`; đăng nhập thành công → `/su-kien`; cần đổi mật khẩu → `/change-password` rồi danh sách. API vẫn kiểm tra session, forced-change và quyền từng sự kiện độc lập với URL giao diện.
+
 ## Events / members
 
 | Route | Quyền | Input / output |

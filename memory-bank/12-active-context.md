@@ -2,6 +2,8 @@
 
 Cập nhật 16/10/2026, schema v3, UI Vue/MDS. Đã triển khai yêu cầu 1–5 và account policy 7–8: ngày/số Việt Nam, MDS components + mobile composition riêng, import Excel Editor theo event, online/offline/hybrid, Viewer/Editor/Admin/Super admin. Source dropdown tự cập nhật report. Xem VERIFICATION.md cho test và Docker.
 
+Luồng mới: `/log-in` → `/su-kien` để tự chọn sự kiện, không tự mở event đầu tiên. Danh sách desktop/mobile riêng có tìm kiếm, lọc quyền và nhãn Viewer/Editor/Admin/Super admin. Quyền cấp riêng mỗi event; không có membership là Viewer. Deep link hết session đổi về `/log-in`; đăng nhập lại về danh sách. Tài khoản bắt buộc đổi mật khẩu qua `/change-password` trước danh sách. 19/19 tests QA đạt; browser xác nhận một tài khoản Viewer ở event A và Editor ở event B, refresh/back/logout và mobile 320/390px. Không thay schema hay reset mật khẩu người dùng trong lần sửa này.
+
 Bản Docker vẫn dùng project/volume misa-event-insights. Migration v3 thu hồi session cũ; đăng nhập bằng Super admin được yêu cầu và tự đổi mật khẩu lần đầu. Không reset mật khẩu đã đổi khi restart/import. Tài khoản bootstrap ngoài miền bị inactive. DB trước nâng cấp đã backup và restore thử vào database riêng; 1 event/2 snapshots/134 rows trước-sau khớp. Không commit backup hoặc runtime env.
 
 Còn cần thông tin bên ngoài: máy chủ MISA + CIDR/IP allowlist; host MISA AMIS + thiết bị thật để nghiệm thu native mobile. Chưa deploy cloud/managed Agent Runtime. Gemini REST model giữ nguyên.

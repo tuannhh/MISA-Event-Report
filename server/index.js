@@ -104,6 +104,7 @@ app.get('/api/events/:eventId/audit',owner,async(req,res)=>{const {rows}=await p
 app.use('/vendor/chart',express.static(path.resolve('node_modules/chart.js/dist')));
 app.use('/vendor/html2canvas',express.static(path.resolve('node_modules/html2canvas/dist')));
 app.use(express.static(path.resolve('dist')));
+app.get(['/log-in','/su-kien','/change-password'],(req,res)=>res.sendFile(path.resolve('dist/index.html')));
 app.get(/^\/[^/]+\/(?:tong-quan|du-lieu|nguon-du-lieu|muc-tieu|thanh-vien|nhat-ky)\/?$/,(req,res)=>res.sendFile(path.resolve('dist/index.html')));
 app.use((err,req,res,next)=>{if(res.headersSent)return next(err);let status=err.status||500,message=err.status?err.message:'Đã xảy ra lỗi. Vui lòng thử lại.';if(err instanceof z.ZodError){status=400;message='Dữ liệu không hợp lệ: '+err.issues.map(i=>`${i.path.join('.')}: ${i.message}`).join('; ');}if(err.code==='LIMIT_FILE_SIZE'){status=413;message='File tối đa 10 MB.';}if(err.code==='23505'){status=409;message='Dữ liệu đã tồn tại. Vui lòng tải lại.';}console.error(JSON.stringify({type:'request_error',status,code:err.code||err.name}));res.status(status).json({error:message});});
 await migrate();await bootstrap();

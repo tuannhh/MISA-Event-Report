@@ -4,6 +4,7 @@
 
 ## Chức năng hiện tại
 
+- Đăng nhập tại `/log-in`, thành công mở `/su-kien` để người dùng chọn sự kiện; không tự mở sự kiện đầu tiên. Danh sách có tìm kiếm, lọc Được chỉnh sửa/Chỉ xem và quyền riêng từng sự kiện. Tài khoản mới phải đổi mật khẩu tại `/change-password` trước khi vào danh sách.
 - Mỗi sự kiện có URL ổn định `/ten-su-kien-123abc/tong-quan`, `/thanh-vien`, `/du-lieu`, `/nguon-du-lieu`, `/muc-tieu`, `/nhat-ky`.
 - Nhập Excel/CSV hoặc Google Sheet, ghép cột bằng tay/Gemini, kiểm tra trước khi nhập. Snapshot cũ giữ nguyên; đồng bộ Sheet mỗi 5 phút.
 - Chọn nguồn khách tự cập nhật KPI, bảng, biểu đồ, so sánh và Excel. Các chiều nguồn được phát hiện từ header, có thể chỉnh trước khi import. Nhiều điều kiện kết hợp AND.

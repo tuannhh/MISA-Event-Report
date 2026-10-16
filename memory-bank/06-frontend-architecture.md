@@ -8,4 +8,8 @@ Vite build `frontend/` → `dist/`, Express phục vụ dist. Source vanilla `pu
 
 Route slug/history cho 6 trang; refresh/deep link vẫn đi qua login/force password/RBAC. Role action ẩn ở UI và kiểm tra lại backend. Source discovery/mapping preview vẫn giữ trước commit; member import preview riêng không tạo lead. Appearance dùng MSettingsDialog theme/header/density; user account đổi mật khẩu/logout. Không lưu lead/password vào localStorage. Form state nằm store nên giữ khi đổi viewport; reload có thể mất draft chưa lưu.
 
+`navigation.js` quy định `/log-in` → `/su-kien` → `/:slug/tong-quan`. Sau đăng nhập luôn về danh sách, kể cả trước đó mở deep link; tài khoản bắt buộc đổi mật khẩu đi qua `/change-password` rồi về danh sách. Refresh khi còn session giữ route sự kiện hợp lệ. Chưa đăng nhập, hết session hoặc logout thì thay URL bằng `/log-in`; slug lạ về danh sách kèm thông báo, không tự chọn sự kiện khác.
+
+`EventListDesktop.vue` và `EventListMobile.vue` là hai composition danh sách riêng, chia sẻ state/filter trong store. Card hiển thị ngày vi-VN, hình thức và role từ API; có tìm tên, lọc tất cả/được sửa/chỉ xem. Mỗi lần mở sự kiện tải lại quyền từ API. Header/logo và nút Danh sách sự kiện quay về chooser. Viewer xem mọi sự kiện, Editor/Admin chỉ được chỉnh sửa nơi có membership; backend vẫn là nguồn quyết định quyền.
+
 Phạm vi bằng chứng: Docker build + desktop và mobile browser. Chưa có host MISA AMIS, OS Dynamic Type/Display Zoom, gesture/lifecycle/file permission native để test. Không khẳng định native production compliance; ma trận nằm UI-VERIFICATION.md. Các gap tiếp theo: restore draft qua reload, focus lỗi theo field và native host adapter.

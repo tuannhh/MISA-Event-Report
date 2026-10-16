@@ -4,6 +4,8 @@ Nguồn: repo misa-design-system-skill do chủ dự án chỉ định; copy-in 
 
 | Route | Desktop browser | Mobile browser | Quyền |
 |---|---|---|---|
+| log-in | Deep link chưa đăng nhập và logout đổi về URL này | Form mobile | Public shell; API bảo vệ dữ liệu |
+| su-kien | Sau login, tìm tên, card ngày/quyền, chọn event | Composition riêng; 390px và 320px không overflow ngang, lọc Được sửa | Mọi tài khoản đã đổi mật khẩu; role riêng từng event |
 | tong-quan | KPI, source onchange, date controls, chart/table | Composition riêng; 320/360/390/430/768 không overflow ngang | Viewer+ |
 | du-lieu | MDataTable, edit | Card list, ngày dd/mm/yyyy, edit dialog | Viewer đọc, Editor+ sửa |
 | nguon-du-lieu | Upload/Sheet/mapping | Control cùng API trong mobile shell | Viewer trạng thái chỉ xem, Editor+ nhập |

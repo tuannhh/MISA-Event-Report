@@ -27,3 +27,7 @@ Theo yêu cầu `/tên-sự-kiện-dãy-6-ký-tự/tính-năng`, migration v2 th
 ## 16/10/2026 — Hoàn thiện yêu cầu 1–5 và account policy
 
 Sau phản hồi chưa thấy thay đổi ở bản chạy: thay frontend vanilla bằng Vue/MDS thật, desktop/mobile riêng; source onchange load report; dd/MM/yyyy + vi-VN; roles v3, member Excel, no invite, forced password/domain, event mode + attendance breakdown. Backup/restore drill trước migration, giữ 134 rows/2 snapshots. Đổi Dockerfile multi-stage Vite; cập nhật CI tests và docs. Không deploy MISA server/IP/native host vì chưa có thông tin tương ứng.
+
+## 16/10/2026 — Đăng nhập và chọn sự kiện
+
+Tách URL đăng nhập `/log-in` khỏi route sự kiện, thêm danh sách `/su-kien` sau đăng nhập và `/change-password` cho tài khoản cần đổi mật khẩu. Không tự chọn sự kiện đầu tiên; người dùng chọn card có nhãn quyền riêng sự kiện, tìm kiếm và lọc được chỉnh sửa/chỉ xem. Thêm composition MDS desktop/mobile riêng. API giữ Viewer mặc định toàn ứng dụng và membership Editor/Admin từng event. Thêm test route policy, SPA entrypoints và role sau thu hồi quyền ở một event; 19/19 QA tests đạt. Browser xác nhận URL, quyền giữa hai event, refresh, Back sau logout và mobile không tràn ngang ở 320px. Cập nhật Docker giữ nguyên volume, không migration hay reset mật khẩu.

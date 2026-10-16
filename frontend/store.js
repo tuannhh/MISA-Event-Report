@@ -1,3 +1,4 @@
+import {destination,LOGIN_PATH,EVENTS_PATH,canEditEvent} from './navigation.js';
 import {reactive,computed,watch} from 'vue';
 export const number=v=>v==null?'—':Number(v).toLocaleString('vi-VN',{maximumFractionDigits:2});
 export const percent=v=>v==null?'—':number(v)+'%';
@@ -8,12 +9,12 @@ export const modeOptions=[{value:'online',label:'Online'},{value:'offline',label
 export const eventModes=[{value:'online',label:'Online'},{value:'offline',label:'Offline'},{value:'hybrid',label:'Online và offline'}];
 export const reports=[{value:'targets',label:'Mục tiêu & tracking'},{value:'positions',label:'Chức vụ'},{value:'sizes',label:'Quy mô nhân sự'},{value:'trend',label:'Xu hướng đăng ký'},{value:'sources',label:'Nguồn khách & tracking'}];
 export const nav=[{key:'tong-quan',label:'Tổng quan',icon:'home'},{key:'du-lieu',label:'Dữ liệu đăng ký',icon:'list'},{key:'nguon-du-lieu',label:'Nhập & đồng bộ',icon:'upload'},{key:'muc-tieu',label:'Thiết lập sự kiện',icon:'settings'},{key:'thanh-vien',label:'Thành viên chỉnh sửa',icon:'users'},{key:'nhat-ky',label:'Nhật ký',icon:'clock'}];
-export const s=reactive({user:null,ready:false,events:[],event:null,route:location.pathname.split('/')[2]||'tong-quan',error:'',message:'',busy:false,reportBusy:false,report:null,snapshots:[],filters:{from:null,to:null,compareFrom:null,compareTo:null,snapshot:'',mode:'all'},sources:{},selected:reports.map(r=>r.value),showPercent:false,table:false,dimension:'',members:[],memberPreview:null,rows:[],rowTotal:0,page:1,query:'',audit:[],stage:null,preview:null,mapping:{},sourceColumns:[],autoSync:true,sheetUrl:'',sheetName:'',headerRow:'1',settings:null,eventDraft:null,clevelText:'',insight:null,dialog:'',editRow:null,member:{name:'',email:'',role:'editor'},newEvent:{name:'',event_date:null,mode:'hybrid'},appearance:false});
+export const s=reactive({user:null,ready:false,screen:'events',eventSearch:'',eventAccess:'all',events:[],event:null,route:location.pathname.split('/')[2]||'tong-quan',error:'',message:'',busy:false,reportBusy:false,report:null,snapshots:[],filters:{from:null,to:null,compareFrom:null,compareTo:null,snapshot:'',mode:'all'},sources:{},selected:reports.map(r=>r.value),showPercent:false,table:false,dimension:'',members:[],memberPreview:null,rows:[],rowTotal:0,page:1,query:'',audit:[],stage:null,preview:null,mapping:{},sourceColumns:[],autoSync:true,sheetUrl:'',sheetName:'',headerRow:'1',settings:null,eventDraft:null,clevelText:'',insight:null,dialog:'',editRow:null,member:{name:'',email:'',role:'editor'},newEvent:{name:'',event_date:null,mode:'hybrid'},appearance:false});
 export const canEdit=computed(()=>['editor','admin','super_admin'].includes(s.event?.role));
 export const canAdmin=computed(()=>['admin','super_admin'].includes(s.event?.role));
 export const isSuper=computed(()=>s.user?.global_role==='super_admin');
 export const title=computed(()=>nav.find(n=>n.key===s.route)?.label||'Sự kiện');
-export async function api(url,body,method){const response=await fetch(url,{method:method||(body?'POST':'GET'),headers:body instanceof FormData?{}:body?{'Content-Type':'application/json'}:{},body:body instanceof FormData?body:body?JSON.stringify(body):undefined});if(!response.ok){const data=await response.json().catch(()=>({}));if(response.status===401){s.user=null;s.event=null;s.report=null;}throw Error(data.error||'Không thể xử lý yêu cầu.');}return response.json();}
+export async function api(url,body,method){const response=await fetch(url,{method:method||(body?'POST':'GET'),headers:body instanceof FormData?{}:body?{'Content-Type':'application/json'}:{},body:body instanceof FormData?body:body?JSON.stringify(body):undefined});if(!response.ok){const data=await response.json().catch(()=>({}));if(response.status===401)clearSession();throw Object.assign(Error(data.error||'Không thể xử lý yêu cầu.'),{status:response.status});}return response.json();}
 export async function run(fn){if(s.busy)return;s.busy=true;s.error='';try{return await fn();}catch(e){s.error=e.message;}finally{s.busy=false;}}
 export function notify(text){s.message=text;setTimeout(()=>s.message='',5000);}
 const base=()=>`/api/events/${s.event.id}`;
@@ -23,14 +24,50 @@ export async function loadReport(){if(!s.event)return;const seq=++reportRequest;
 watch([()=>s.filters,()=>s.sources],()=>{if(s.event)loadReport();},{deep:true});
 export function sourceValue(name,value){const next={...s.sources};if(value==='__ALL__')delete next[name];else next[name]=value;s.sources=next;}
 export function resetFilters(){s.filters={from:null,to:null,compareFrom:null,compareTo:null,snapshot:'',mode:'all'};s.sources={};}
-export async function initialize(){try{s.user=await api('/api/me');if(!s.user.must_change_password)await loadEvents();}catch(e){if(s.user)s.error=e.message;}finally{s.ready=true;}}
-export async function loadEvents(){s.events=await api('/api/events');const slug=location.pathname.split('/')[1];const chosen=s.events.find(e=>e.slug===slug)||(!slug?s.events[0]:null);if(chosen)await selectEvent(chosen.id,false);else if(slug){s.event=null;s.error='Không tìm thấy sự kiện trong đường dẫn này.';}}
-export async function selectEvent(id,push=true){const event=s.events.find(e=>e.id===id);if(!event)return;reportRequest++;s.event=null;s.report=null;s.stage=null;s.preview=null;s.memberPreview=null;resetFilters();s.event=await api('/api/events/'+id);s.settings=JSON.parse(JSON.stringify(s.event.settings));s.clevelText=s.settings.clevel.join('\n');s.eventDraft={name:s.event.name,event_date:s.event.event_date?new Date(s.event.event_date):null,mode:s.event.mode};s.selected=[...s.settings.reports];s.snapshots=await api(base()+'/snapshots');await navigate(s.route,push);}
-export async function navigate(route,push=true){if(!nav.some(n=>n.key===route))route='tong-quan';s.route=route;s.error='';s.dialog='';if(s.event){const url='/'+s.event.slug+'/'+route;if(location.pathname!==url)history[push?'pushState':'replaceState']({},'',url);if(route==='tong-quan')await loadReport();if(route==='du-lieu'){s.page=1;await loadRows();}if(route==='thanh-vien')await loadMembers();if(route==='nhat-ky'&&canAdmin.value)s.audit=await api(base()+'/audit');}}
-window.addEventListener('popstate',()=>run(async()=>{s.route=location.pathname.split('/')[2]||'tong-quan';await loadEvents();}));
-export async function login(email,password){await api('/api/login',{email,password});await initialize();}
-export async function logout(){await api('/api/logout',{});s.user=null;s.event=null;s.report=null;s.members=[];s.rows=[];history.replaceState({},'','/');}
-export async function changePassword(current,password){await api('/api/password',{current,password});s.dialog='';notify('Đã đổi mật khẩu.');await initialize();}
+function pathTo(path,push=false){
+  const surface=new URLSearchParams(location.search).get('surface');
+  const next=path+(surface==='mobile'?'?surface=mobile':'');
+  if(location.pathname+location.search!==next)history[push?'pushState':'replaceState']({},'',next);
+}
+function clearEvent(){
+  reportRequest++;s.reportBusy=false;s.event=null;s.report=null;s.rows=[];s.members=[];s.snapshots=[];
+  s.stage=null;s.preview=null;s.memberPreview=null;s.audit=[];s.insight=null;s.settings=null;s.eventDraft=null;s.dialog='';
+}
+function clearSession(){clearEvent();s.user=null;s.events=[];s.screen='login';pathTo(LOGIN_PATH);}
+export async function initialize({afterLogin=false}={}){
+  try{
+    s.user=await api('/api/me');
+    const next=destination(location.pathname,s.user,afterLogin);
+    if(next.screen==='password'){clearEvent();s.screen=next.screen;pathTo(next.path);}
+    else {if(next.screen==='events')s.screen='events';await loadEvents({afterLogin});}
+  }catch(e){if(e.status!==401){s.error=e.message;if(!s.user){s.screen='login';pathTo(LOGIN_PATH);}}}finally{s.ready=true;}
+}
+export async function loadEvents({afterLogin=false}={}){
+  s.events=await api('/api/events');
+  const next=destination(location.pathname,s.user,afterLogin);
+  if(next.screen==='event'){
+    const chosen=s.events.find(e=>e.slug===next.slug);
+    if(chosen){s.route=next.feature;await selectEvent(chosen.id,false);return;}
+  }
+  clearEvent();s.screen='events';pathTo(EVENTS_PATH);
+  if(next.missing||next.screen==='event')s.error='Không tìm thấy sự kiện trong đường dẫn này. Hãy chọn sự kiện bên dưới.';
+}
+export async function showEventList(push=true){
+  clearEvent();s.screen='events';s.error='';pathTo(EVENTS_PATH,push);
+  s.events=await api('/api/events');
+}
+export async function openEvent(id){s.route='tong-quan';await selectEvent(id);}
+export const filteredEvents=computed(()=>s.events.filter(e=>{
+  const norm=v=>v.normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/đ/g,'d').toLowerCase();
+  const matches=norm(e.name).includes(norm(s.eventSearch.trim()));
+  return matches&&(s.eventAccess==='all'||(s.eventAccess==='edit'?canEditEvent(e):!canEditEvent(e)));
+}));
+export async function selectEvent(id,push=true){const event=s.events.find(e=>e.id===id);if(!event)return;reportRequest++;s.event=null;s.report=null;s.stage=null;s.preview=null;s.memberPreview=null;resetFilters();s.event=await api('/api/events/'+id);s.screen='event';s.settings=JSON.parse(JSON.stringify(s.event.settings));s.clevelText=s.settings.clevel.join('\n');s.eventDraft={name:s.event.name,event_date:s.event.event_date?new Date(s.event.event_date):null,mode:s.event.mode};s.selected=[...s.settings.reports];s.snapshots=await api(base()+'/snapshots');await navigate(s.route,push);}
+export async function navigate(route,push=true){if(!nav.some(n=>n.key===route))route='tong-quan';s.route=route;s.error='';s.dialog='';if(s.event){const url='/'+s.event.slug+'/'+route;pathTo(url,push);if(route==='tong-quan')await loadReport();if(route==='du-lieu'){s.page=1;await loadRows();}if(route==='thanh-vien')await loadMembers();if(route==='nhat-ky'&&canAdmin.value)s.audit=await api(base()+'/audit');}}
+window.addEventListener('popstate',()=>{s.error='';initialize();});
+export async function login(email,password){await api('/api/login',{email:email.trim(),password});await initialize({afterLogin:true});}
+export async function logout(){await api('/api/logout',{});clearSession();}
+export async function changePassword(current,password){const forced=s.user.must_change_password;await api('/api/password',{current,password});s.dialog='';notify('Đã đổi mật khẩu.');await initialize({afterLogin:forced});}
 export async function createEvent(){const e=await api('/api/events',{...s.newEvent,event_date:isoDate(s.newEvent.event_date)||null});s.events=await api('/api/events');s.route='tong-quan';await selectEvent(e.id);notify('Đã tạo sự kiện.');}
 export async function saveEvent(){await api(base(),{...s.eventDraft,event_date:isoDate(s.eventDraft.event_date)||null},'PATCH');await api(base()+'/settings',{...s.settings,target:Number(s.settings.target),clevel:s.clevelText.split('\n').map(v=>v.trim()).filter(Boolean),targets:s.settings.targets.map(t=>({...t,target:Number(t.target)}))},'PUT');s.event=await api(base());s.events=await api('/api/events');notify('Đã lưu thiết lập sự kiện.');}
 export async function loadMembers(){s.members=await api(base()+'/members');}
