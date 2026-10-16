@@ -18,3 +18,5 @@ prapplication-*.json
 Truy-cap-noi-bo.txt
 config/config.*.json
 !config/config.*.example.json
+
+dist/

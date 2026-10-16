@@ -7,7 +7,7 @@
 3. Luôn ghi rõ tử số/mẫu số. Theo yêu cầu trực tiếp 16/10/2026, ô KPI có nhãn “Tỷ lệ C-Level” trên tổng quan phải dùng **tổng lượt đăng ký / tổng mục tiêu sự kiện**. Đây là nhãn nghiệp vụ được yêu cầu, cùng công thức với “Hoàn thành mục tiêu”; không dùng để thay nghĩa trường `clevel_share` của API/bảng chi tiết.
 4. Giữ bản nhập cũ khi nguồn lỗi; thay active snapshot và lưu dữ liệu trong cùng transaction. Truy vấn snapshot/import phải gắn event_id, staging còn gắn user_id.
 5. Phải phân biệt data registration với tài khoản thành viên của ứng dụng. Import lead không được tạo tài khoản đăng nhập.
-6. Các yêu cầu v2 nằm trong [12](12-active-context.md) vẫn có hiệu lực. Không coi baseline owner/editor/viewer là đáp ứng mô hình mới.
+6. Bốn cấp quyền v3 đã triển khai; bảo vệ backend và kiểm tra quyền lại ở mỗi request. Các gap còn lại nằm trong [12](12-active-context.md).
 7. MISA UI phải theo repo design system được cung cấp. Thay đổi nhỏ về công thức không đồng nghĩa toàn bộ UI đã chuyển MDS. Không dùng XDS thay yêu cầu MISA.
 8. Không đưa khóa Google, mật khẩu bàn giao, runtime.env, bản dump hoặc thông tin lead vào Git. Thông tin đăng nhập do người dùng cấp chỉ cấu hình ngoài source.
 9. Test tích hợp phải dùng DB riêng. Không đổi tên Compose project/volume đang có chỉ vì đổi tên repository.

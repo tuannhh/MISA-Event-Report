@@ -1,0 +1,4 @@
+export const isMisaEmail = value => /^[^\s@]+@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)*misa\.com\.vn$/i.test(value);
+export const strongPassword = value => typeof value==='string' && value.length>=10 && value.length<=128 && /[a-z]/.test(value) && /[A-Z]/.test(value) && /[0-9]/.test(value) && /[^A-Za-z0-9\s]/.test(value);
+export const modeLabels={online:'Online',offline:'Offline',both:'Cả online và offline',unknown:'Chưa xác định'};
+export function attendanceMode(value){const v=String(value||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().trim();if(['online','truc tuyen'].includes(v))return 'online';if(['offline','truc tiep'].includes(v))return 'offline';if(['both','hybrid','ca hai','ca online va offline','online va offline','online/offline'].includes(v))return 'both';return 'unknown';}

@@ -14,8 +14,8 @@ Môi trường MISA production chưa có địa chỉ, danh sách IP, chứng th
 | PORT | Port Node, 8080 | Không |
 | DB_PASSWORD | Compose tạo database và DATABASE_URL | Có |
 | DATABASE_URL | pg connection string, bắt buộc cho API/job | Có |
-| BOOTSTRAP_EMAIL | Tài khoản đầu tiên nếu users rỗng | Cấu hình nội bộ |
-| BOOTSTRAP_PASSWORD | Mật khẩu đầu tiên, ≥12 ký tự, không ghi đè user đã có | Có |
+| SUPER_ADMIN_EMAIL | Super admin cấu hình, tạo nếu email chưa tồn tại | Cấu hình nội bộ |
+| SUPER_ADMIN_PASSWORD | Mật khẩu đầu tiên, ≥10 ký tự ban đầu, bắt đổi lần đầu, không ghi đè user đã có | Có |
 | APP_ORIGIN | Origin được phép cho request thay đổi | Không |
 | COOKIE_SECURE | Chỉ false ở local HTTP; mặc định secure | Không |
 | GOOGLE_CLOUD_PROJECT | Project gọi model | Cấu hình nội bộ |
@@ -34,7 +34,7 @@ Môi trường MISA production chưa có địa chỉ, danh sách IP, chứng th
 3. Từ root source, chạy `docker compose --env-file PATH_TO_RUNTIME_ENV up -d --build`.
 4. Kiểm tra `docker compose --env-file PATH_TO_RUNTIME_ENV ps` và `/api/health`; thử login, import mẫu không nhạy cảm.
 
-Ở máy hiện tại PATH_TO_RUNTIME_ENV là `../../work/runtime.env`. Không in file này vào log. Đổi BOOTSTRAP_EMAIL/PASSWORD khi DB đã có user không tự đổi tài khoản hiện hữu.
+Ở máy hiện tại PATH_TO_RUNTIME_ENV là `../../work/runtime.env`. Không in file này vào log. Đổi SUPER_ADMIN_EMAIL/PASSWORD khi DB đã có user không tự đổi tài khoản hiện hữu.
 
 ## Kiểm thử
 
@@ -56,6 +56,8 @@ Trước chuyển production: hoàn tất quyền mới, chính sách email/pass
 
 ## Migration v2 và lần cập nhật báo cáo
 
-Đã tạo backup local trước migration slug ngoài repository. V2 backfill slug cho sự kiện hiện hữu, giữ UUID/rows. Code v1 cũ không ghi slug khi tạo event, nên không rollback chỉ image về v1 trên DB v2 mà không chuẩn bị tương thích. Nếu cần quay lui toàn bộ, restore bản backup vào DB riêng và chuyển có kiểm soát; cân nhắc dữ liệu ghi mới sau backup. Chưa thực hiện restore drill.
+Đã tạo backup local trước migration slug ngoài repository. V2 backfill slug cho sự kiện hiện hữu, giữ UUID/rows. Code v1 cũ không ghi slug khi tạo event, nên không rollback chỉ image về v1 trên DB v2 mà không chuẩn bị tương thích. Nếu cần quay lui toàn bộ, restore bản backup vào DB riêng và chuyển có kiểm soát; cân nhắc dữ liệu ghi mới sau backup. Đã restore drill trước migration v3 vào database riêng; xem VERIFICATION.md.
 
 CI và bộ test mới gồm 14 test, phải chạy full integration trên stack cách ly để kiểm tra migration, route, export và nguồn. Kết quả cuối và giới hạn xem VERIFICATION.md.
+
+DEFAULT_MEMBER_PASSWORD bắt buộc qua policy (10–128 ký tự đủ hoa/thường/số/đặc biệt), cấp khi tạo user mới. Không đổi password user tồn tại. Vite frontend build trong stage build; runtime serve dist. Backup/restore thử đã chạy trước migration v3, chi tiết VERIFICATION.md.

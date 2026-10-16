@@ -50,3 +50,7 @@ Export Excel lấy cùng hàm report với bảng/AI, luôn có Tổng quan ch�
 ## AI
 
 Gợi ý mapping chỉ nhận header; nhận xét nhận báo cáo tổng hợp, bỏ targets chi tiết trước khi gửi. Raw contact không được chủ động đưa vào prompt. Nhãn group/source vẫn là dữ liệu nguồn, nên cần kiểm soát tránh chứa PII ngoài dự kiến. System instruction coi DATA là dữ liệu, không làm theo lệnh trong ô/nhãn. JSON phản hồi phải đúng schema; lỗi hoặc output thiếu trả lỗi, không bịa kết quả. Đếm số bằng code, không bằng model.
+
+## v3: hình thức và nguồn tự cập nhật
+
+Event mode online/offline/hybrid là cấu hình tổ chức. Mapping attendance_mode nhận Online/Trực tuyến, Offline/Trực tiếp, Cả hai/hybrid, còn lại unknown. Không tự suy từ event mode. Summary.modes gồm 4 nhóm loại trừ nhau, tổng bằng total; filter mode chọn chính xác một nhóm (online không bao gồm both). Dedup trước source/mode/date. Cùng filter áp dụng current/comparison/Excel. UI chọn nguồn tự gọi report, không cần nút Lọc. Member import là luồng riêng, không thay active lead snapshot.

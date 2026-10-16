@@ -1,6 +1,6 @@
 # 03 — Lược đồ cơ sở dữ liệu
 
-Nguồn thực thi duy nhất: `server/db.js:migrate()`. PostgreSQL; schema v2 (v1 cộng slug sự kiện). Trong các bảng dưới, `NN` = NOT NULL, `PK` = primary key, `FK` = foreign key. Cột không ghi NN/PK cho phép NULL. Không có ON DELETE CASCADE được khai báo.
+Nguồn thực thi duy nhất: `server/db.js:migrate()`. PostgreSQL; schema v3 (slug, roles/account, event mode). Trong các bảng dưới, `NN` = NOT NULL, `PK` = primary key, `FK` = foreign key. Cột không ghi NN/PK cho phép NULL. Không có ON DELETE CASCADE được khai báo.
 
 ## users — tài khoản
 
@@ -10,6 +10,9 @@ Nguồn thực thi duy nhất: `server/db.js:migrate()`. PostgreSQL; schema v2 (
 | email | text NN UNIQUE | Email được API chuyển chữ thường |
 | password | text NN | Salt và hash scrypt, không phải mật khẩu rõ |
 | name | text NN | Tên hiển thị |
+| global_role | text NN DEFAULT viewer, CHECK viewer/super_admin | Quyền toàn ứng dụng |
+| must_change_password | boolean NN DEFAULT true | Bắt đổi mật khẩu |
+| active | boolean NN DEFAULT true | Tài khoản đang hoạt động |
 | created_at | timestamptz NN DEFAULT now() | Ngày tạo |
 
 ## sessions — phiên đăng nhập
@@ -28,6 +31,7 @@ Nguồn thực thi duy nhất: `server/db.js:migrate()`. PostgreSQL; schema v2 (
 | name | text NN | Tên sự kiện |
 | slug | text NN, unique index events_slug_unique | Tên không dấu + '-' + 6 ký tự hex; URL ổn định |
 | event_date | date | Ngày diễn ra |
+| mode | text NN DEFAULT hybrid, CHECK online/offline/hybrid | Hình thức tổ chức |
 | settings | jsonb NN | target, clevel, dedup, targets, reports |
 | active_snapshot_id | uuid | Snapshot hiện hành, **chưa có FK** |
 | source | jsonb | url, sheetName, headerRow, mapping, enabled, fingerprint |
@@ -41,9 +45,9 @@ Nguồn thực thi duy nhất: `server/db.js:migrate()`. PostgreSQL; schema v2 (
 |---|---|---|
 | event_id | uuid PK thành phần, FK events(id) | Sự kiện |
 | user_id | uuid PK thành phần, FK users(id) | Tài khoản |
-| role | text NN CHECK owner/editor/viewer | Quyền riêng trong sự kiện |
+| role | text NN CHECK admin/editor | Quyền riêng trong sự kiện |
 
-PK `(event_id,user_id)` chống membership trùng. Chưa có global role hay admin trong v1.
+PK `(event_id,user_id)` chống membership trùng. Viewer là quyền đọc mặc định toàn ứng dụng; không cần membership. Super admin dùng users.global_role.
 
 ## snapshots — bản dữ liệu bất biến theo luồng ứng dụng
 
@@ -52,7 +56,7 @@ PK `(event_id,user_id)` chống membership trùng. Chưa có global role hay adm
 | id | uuid PK | ID phiên |
 | event_id | uuid NN FK events(id) | Tenant |
 | label | text NN | Nguồn hoặc lý do tạo |
-| rows | jsonb NN | Mảng 10 trường chuẩn hóa cộng id dòng |
+| rows | jsonb NN | Mảng 11 trường chuẩn hóa cộng id, source_details; attendance_mode là online/offline/both/unknown. Dòng cũ thiếu field đọc thành unknown. |
 | quality | jsonb NN | total, invalidDates, missingPosition, duplicateRows |
 | created_by | uuid FK users(id) | NULL khi đồng bộ nền |
 | created_at | timestamptz NN DEFAULT now() | Ngày nhập |
@@ -111,3 +115,7 @@ Ngày 16/10/2026: v1 tạo 9 bảng bằng CREATE IF NOT EXISTS trong transactio
 JSONB bổ sung không cần ALTER: rows có source_details `{tên cột:giá trị}`; source có sourceColumns, sourceHeaders và discovery `{columns,method,notice}`. imports.payload cũng có sourceColumns/discovery. Snapshot cũ không có source_details vẫn đọc được bằng fallback source/tracking; không sửa lịch sử để bổ sung dữ liệu không có.
 
 Thay đổi quyền/account/channel tiếp theo phải có migration thực thi và tài liệu này cập nhật cùng lúc. Không tự sửa DB chạy thật chỉ bằng câu lệnh thủ công.
+
+## Migration v3
+
+Thực thi một lần dưới advisory lock và transaction: thêm ba cột users, events.mode; đổi owner → admin; xóa membership viewer vì quyền đọc đã mặc định; CHECK chỉ admin/editor; xóa invitations và sessions cũ. Bootstrap vô hiệu tài khoản ngoài miền MISA, tạo Super admin được cấu hình nếu chưa có, không reset mật khẩu tài khoản hiện hữu. Giữ events, snapshots, imports, audit và UUID/slug. Invitations chỉ còn bảng tương thích lịch sử, không có API sử dụng.

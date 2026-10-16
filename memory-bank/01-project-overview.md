@@ -8,12 +8,12 @@ Người phụ trách: chủ dự án trong phiên làm việc, tài khoản qu�
 
 | Môi trường | Địa chỉ | Dữ liệu | Trạng thái |
 |---|---|---|---|
-| Local | http://localhost:8096 | PostgreSQL 16, volume riêng của Compose | Bản v1 đã chạy Docker |
+| Local | http://localhost:8096 | PostgreSQL 16, volume riêng của Compose | Bản v3 đã chạy Docker |
 | Kiểm thử | http://localhost:8097 khi tạo QA stack | Database/volume riêng, dữ liệu tổng hợp QA | Tạo theo nhu cầu, không dùng DB local |
 | Máy chủ MISA | Chưa được cung cấp | Chưa xác định | Đích triển khai mới; chờ máy chủ và IP |
 | Cloud Run | Chưa có URL | Dự kiến Cloud SQL | Chỉ có tài liệu/script, chưa deploy |
 
-Hiện mỗi sự kiện là một tenant. User chỉ thấy sự kiện có membership; tạo sự kiện trở thành owner. Các vai trò hiện có là owner/editor/viewer. Yêu cầu mới Viewer xem mọi sự kiện và Admin/Super admin chưa có trong runtime; xem [12](12-active-context.md).
+Mỗi sự kiện là tenant cho dữ liệu/quyền ghi. Mọi tài khoản MISA đăng nhập xem tất cả sự kiện (Viewer). Editor/Admin được cấp riêng từng sự kiện; Super admin quản lý toàn ứng dụng. Tài khoản mới bắt đổi mật khẩu; import Excel cấp Editor không gửi lời mời.
 
 ## Quy trình điển hình hiện có
 
@@ -22,6 +22,6 @@ Hiện mỗi sự kiện là một tenant. User chỉ thấy sự kiện có mem
 3. Đặt mục tiêu/tracking, C-Level và quy tắc gộp trùng cho sự kiện.
 4. Xem phiên dữ liệu mới nhất hoặc lịch sử, lọc thời gian submit và so sánh hai kỳ.
 5. Chọn báo cáo dạng bảng/biểu đồ, lấy nhận xét AI hoặc xuất PNG.
-6. Owner cấp quyền qua liên kết mời trong v1. Luồng này phải được thay bằng thêm/import editor theo yêu cầu mới.
+6. Admin thêm/import Editor bằng Excel Họ và tên, Email; Super admin cấp Admin. Tài khoản dùng nhiều sự kiện.
 
 Nguồn mẫu do chủ dự án cấp đã được dùng kiểm tra v1, không đưa bản sao lead hoặc thông tin định danh của khách hàng vào repository. Chi tiết kiểm tra tổng hợp có trong VERIFICATION.md.

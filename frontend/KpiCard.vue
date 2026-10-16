@@ -1,0 +1,4 @@
+<script setup>
+import {s,number,percent} from './store';defineProps({kind:String});
+const labels={total:'Tổng lượt đăng ký',completion:'Hoàn thành mục tiêu',clevel:'Đăng ký C-Level',ratio:'Tỷ lệ C-Level'};
+</script><template><article class="card"><p class="muted">{{labels[kind]}}</p><div class="kpi-value">{{['completion','ratio'].includes(kind)?percent(s.report.current.completion):number(s.report.current[kind])}}</div><p class="muted">{{kind==='ratio'?'Tổng đăng ký / tổng mục tiêu':kind==='completion'?number(s.report.current.total)+' / '+number(s.report.current.target)+' lượt đăng ký':kind==='clevel'?'Theo chức vụ đã cấu hình':'Theo thời gian submit & bộ lọc'}}</p><p v-if="s.report.comparison" class="muted">Kỳ so sánh: {{['completion','ratio'].includes(kind)?percent(s.report.comparison.completion):number(s.report.comparison[kind])}}</p></article></template>

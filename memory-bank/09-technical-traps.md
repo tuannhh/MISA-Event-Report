@@ -39,3 +39,11 @@ Slug được lưu trong DB, không tính lại mỗi lần render. Route browse
 ## Selector collection trong handler UI
 
 Kiểm thử API có thể pass trong khi nút lọc không chạy. Khi kiểm tra UI, handler dùng `$()` trả một element rồi gọi filter/map thay vì `$$()` trả mảng. Đã sửa cả lọc nguồn và picker nguồn import. Bài học: phải thao tác UI thật, kiểm tra KPI sau lọc và dữ liệu Excel tải xuống; script sửa source bằng String.replace cần callback nếu replacement có ký tự `$` để tránh bị diễn giải đặc biệt.
+
+## v3
+
+- Không structuredClone Vue reactive proxy; clone settings qua JSON vì payload thuần JSON.
+- MButton default secondary: nút chính phải khai báo primary. Registry không có table/history; dùng list/clock.
+- Cần rebuild Docker mới thấy UI Vite, Express serve dist không public.
+- Hai localhost port dùng chung cookie host; QA login có thể thay session cookie local app, cần đăng nhập lại đúng môi trường.
+- Mọi viewer thấy mọi event là yêu cầu sản phẩm, không dùng test isolation v1 để áp đặt membership read. Isolation vẫn áp dụng snapshot/import và quyền ghi.

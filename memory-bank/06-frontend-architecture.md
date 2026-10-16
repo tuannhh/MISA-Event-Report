@@ -1,35 +1,11 @@
-# 06 — Kiến trúc giao diện
+# 06 — Frontend Vue 3 / MISA Design System
 
-Hiện trạng: vanilla JavaScript, một `public/index.html`, `public/app.js` render qua innerHTML, `public/styles.css` responsive. Không có Vue/Tailwind/MDS component tích hợp trong baseline. Chart.js và html2canvas phục vụ nội bộ từ node_modules, không tải CDN.
+Vite build `frontend/` → `dist/`, Express phục vụ dist. Source vanilla `public/` đã thay thế. `frontend/mds/` copy-in component gốc từ repo skill được chủ dự án chỉ định; tokens/themes/font Inter từ assets chuẩn. Registry MIcon dùng icon đã có. MChart dùng ECharts, html2canvas xuất PNG. Đã chỉnh pagination MDataTable sang vi-VN.
 
-State tập trung gồm events/event/tab/mode/charts/filters/report/pagination. `api()` gọi fetch cùng origin; `post()` bọc JSON; `bind()` xử lý lỗi thành toast; `esc()` escape giá trị chèn HTML. Modal dùng native dialog. Khi render lại, Chart instances cũ bị destroy. Luồng API mới phải kiểm tra escape và quyền tại server, không chỉ ẩn nút.
+`App.vue`: auth/force-password, dialog, chọn surface theo container <=1024px hoặc query surface=mobile; không suy luận quyền thành surface. `DesktopPage.vue` theo Dashboard/List/Form templates có MHeaderBar48/MSidebar200/64. `MobilePage.vue` là cây page riêng với MMobileTopBar56, bottom nav5, member/data dạng card list, không dựng desktop header/sidebar. Hai page chia sẻ store, control/form fields và từng chart; không reuse desktop page làm mobile.
 
-| Trang/tab | Hàm chính | Quyền v1 |
-|---|---|---|
-| Login/nhận lời mời | login/init | Khách và người đã có tài khoản |
-| Shell/chọn sự kiện | loadEvents/renderShell | Đăng nhập, danh sách theo membership |
-| Tổng quan | dashboard/renderReport/drawCharts | R |
-| Dữ liệu đăng ký | dataPage/editRow | R xem; E sửa |
-| Nguồn dữ liệu | sourcesPage/importDialog/mappingDialog | R xem; E nhập/sync |
-| Mục tiêu và quy tắc | settingsPage | E |
-| Thành viên | membersPage | R xem; O mời/quản lý |
-| Nhật ký | auditPage | O |
-| Đổi mật khẩu | changePassword | Đăng nhập |
+`store.js`: API/auth/event/route state, load report sequence chống response cũ ghi đè; source/date/mode watch tự gọi report. Khi chờ ẩn số liệu cũ và disable exports. Chọn nguồn tác động current/comparison/Excel/AI. Excel pin snapshot đang xem. ReportStamp ghi tên sự kiện và bộ lọc trên PNG. Snapshot cũ chọn từ MCombobox. Số vi-VN; MDatePicker dd/MM/yyyy; ISO chỉ dùng API. Ô numeric mục tiêu hiển thị vi-VN qua NumberField.
 
-Các tab dùng state trong RAM; History API cập nhật đường dẫn /slug/tính-năng. Truy cập trực tiếp, reload, back/forward chọn đúng event/tab; hash vẫn phục vụ invite v1. Filter/draft chưa lưu vào URL hoặc qua reload. UI poll phiên dữ liệu mỗi 60 giây, tránh render khi modal đang mở.
+Route slug/history cho 6 trang; refresh/deep link vẫn đi qua login/force password/RBAC. Role action ẩn ở UI và kiểm tra lại backend. Source discovery/mapping preview vẫn giữ trước commit; member import preview riêng không tạo lead. Appearance dùng MSettingsDialog theme/header/density; user account đổi mật khẩu/logout. Không lưu lead/password vào localStorage. Form state nằm store nên giữ khi đổi viewport; reload có thể mất draft chưa lưu.
 
-Tab mapping: dashboard→tong-quan, data→du-lieu, sources→nguon-du-lieu, settings→muc-tieu, members→thanh-vien, audit→nhat-ky. Viewer mở trực tiếp settings/audit thấy thông báo thiếu quyền. Slug không có trong danh sách API trả về hiển thị không thể mở, không tự chọn event khác.
-
-Tổng quan có Xuất Excel, filter nguồn theo sourceDimensions, toggle % và chọn chiều nguồn cho chart/table. Plugin canvas vẽ % trên bar/doughnut, kể cả callout cho miếng nhỏ và nhãn legend. Nhập file/Sheet hiển thị danh sách cột nguồn tự nhận diện để chỉnh, preview lại khi thay đổi. Excel tải qua fetch cùng session; lỗi trả toast.
-
-## Định dạng và KPI
-
-num/pct hiện dùng vi-VN: hàng nghìn dấu chấm, thập phân dấu phẩy. when dùng Asia/Ho_Chi_Minh nhưng chưa bắt buộc zero-padding mọi chỗ. Input type=date có thể hiển thị mm/dd/yyyy theo trình duyệt; yêu cầu dd/mm/yyyy toàn UI còn mở.
-
-Ô KPI “Tỷ lệ C-Level” dùng `c.completion` và chú thích “Tổng lượt đăng ký / tổng mục tiêu”, theo yêu cầu mới. `c.clevel_share` vẫn dùng ở bảng chi tiết với nhãn đúng công thức. Export PNG dùng cùng DOM báo cáo nên nhận thay đổi này.
-
-## Chuyển sang MISA Design System — chưa thực hiện
-
-Repo chuẩn do chủ dự án cung cấp: https://github.com/tuannhh/misa-design-system-skill. Skill đã được cài trong máy phát triển; mã component chưa được copy/tích hợp vào ứng dụng.
-
-Định hướng phải tuân theo skill thực tế: component Vue của MDS, tokens/fonts/icons từ repo; composition desktop và mobile riêng, mobile có top bar/bottom navigation và safe area. Không mô tả responsive CSS hiện tại như native app. Khi triển khai cần đọc lại đúng version skill, ghi provenance và bằng chứng viewport/keyboard. Native iOS/Android chưa kiểm chứng.
+Phạm vi bằng chứng: Docker build + desktop và mobile browser. Chưa có host MISA AMIS, OS Dynamic Type/Display Zoom, gesture/lifecycle/file permission native để test. Không khẳng định native production compliance; ma trận nằm UI-VERIFICATION.md. Các gap tiếp theo: restore draft qua reload, focus lỗi theo field và native host adapter.

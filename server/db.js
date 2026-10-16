@@ -33,6 +33,21 @@ INSERT INTO schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
     await c.query('ALTER TABLE events ALTER COLUMN slug SET NOT NULL');
     await c.query('CREATE UNIQUE INDEX IF NOT EXISTS events_slug_unique ON events(slug)');
     await c.query('INSERT INTO schema_versions(version) VALUES(2) ON CONFLICT DO NOTHING');
+    const {rowCount:hasV3}=await c.query('SELECT 1 FROM schema_versions WHERE version=3');
+    if(!hasV3){await c.query(`
+      ALTER TABLE users ADD COLUMN global_role text NOT NULL DEFAULT 'viewer' CHECK(global_role IN ('viewer','super_admin'));
+      ALTER TABLE users ADD COLUMN must_change_password boolean NOT NULL DEFAULT true;
+      ALTER TABLE users ADD COLUMN active boolean NOT NULL DEFAULT true;
+      ALTER TABLE events ADD COLUMN mode text NOT NULL DEFAULT 'hybrid' CHECK(mode IN ('online','offline','hybrid'));
+      ALTER TABLE members DROP CONSTRAINT members_role_check;
+      UPDATE members SET role='admin' WHERE role='owner';
+      DELETE FROM members WHERE role='viewer';
+      ALTER TABLE members ADD CONSTRAINT members_role_check CHECK(role IN ('admin','editor'));
+      DELETE FROM invitations;
+      DELETE FROM sessions;
+      INSERT INTO schema_versions(version) VALUES(3);
+    `);}
+
   });
 }
 export async function audit(c,eventId,userId,action,detail={}) {await c.query('INSERT INTO audit(event_id,user_id,action,detail) VALUES($1,$2,$3,$4)',[eventId,userId,action,JSON.stringify(detail)]);}

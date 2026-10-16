@@ -37,7 +37,7 @@ test('Excel contains selected reports, real numeric cells, both periods and iner
   current.sourceBreakdowns[0].values[0].label='=HYPERLINK("https://example.test","text")';
   const wb=await buildReportWorkbook({name:'QA'}, {snapshot:{label:'QA input'},range:{sourceFilters:{Kênh:'Đối tác'},compareFrom:'2026-10-15',compareTo:'2026-10-15'},current,comparison},['sources','positions']);
   const read=new ExcelJS.Workbook();await read.xlsx.load(await wb.xlsx.writeBuffer());
-  assert.deepEqual(read.worksheets.map(s=>s.name),['Tổng quan','Chức vụ','Nguồn khách','Chức vụ - So sánh','Nguồn khách - So sánh']);
+  assert.deepEqual(read.worksheets.map(s=>s.name),['Tổng quan','Hình thức','Chức vụ','Nguồn khách','Hình thức - So sánh','Chức vụ - So sánh','Nguồn khách - So sánh']);
   const summary=read.getWorksheet('Tổng quan');assert.equal(summary.getCell('B8').value,2);assert.equal(summary.getCell('C8').value,1);
   assert.equal(summary.getCell('B12').value,current.completion/100);assert.equal(summary.getCell('B12').numFmt,'0.00%');
   assert.equal(read.getWorksheet('Nguồn khách').getCell('B2').type,ExcelJS.ValueType.String);
@@ -49,5 +49,5 @@ test('KPI registration completion and zero denominators remain deterministic',as
   const current=summarize([],{...settings,target:0});
   const wb=await buildReportWorkbook({name:'Empty'},{snapshot:{},range:{},current,comparison:null},[]);
   assert.equal(wb.getWorksheet('Tổng quan').getCell('B12').value,null);
-  assert.equal(wb.worksheets.length,1);
+  assert.equal(wb.worksheets.length,2);
 });

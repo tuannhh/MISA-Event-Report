@@ -1,0 +1,1 @@
+import {createApp} from 'vue';import App from './App.vue';import './style.css';const app=createApp(App);for(const [path,module] of Object.entries(import.meta.glob('./mds/M*.vue',{eager:true})))app.component(path.split('/').pop().replace('.vue',''),module.default);app.mount('#app');

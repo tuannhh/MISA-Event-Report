@@ -36,10 +36,11 @@ export async function buildReportWorkbook(event, report, selected = reportTypes)
     ['Mục tiêu chi tiết cộng',c.targetSum,p?.targetSum??null],
     ['Công thức ô Tỷ lệ C-Level','Tổng lượt đăng ký / tổng mục tiêu sự kiện','Theo yêu cầu nghiệp vụ'],
     ['Quy tắc lịch sử','Dữ liệu phiên đã chọn; quy tắc và mục tiêu hiện tại',''],
-    ['Báo cáo được chọn',selected.join(', '),''],
+    ['Báo cáo được chọn',selected.join(', '),''],['Hình thức tham dự',report.range.mode||'all',''],
   ]);
   for(const row of [11,12,13])for(const col of [2,3])summary.getCell(row,col).numFmt='0.00%';
   function period(data,suffix){
+    if(data.modes)sheet('Hình thức'+suffix,['Hình thức','Đăng ký','Tỷ lệ'],data.modes.map(r=>[r.label,r.count,ratio(r.percent)]),[3]);
     const group=(key,title)=>sheet(title+suffix,['Nhóm','Đăng ký','Tỷ lệ / tổng đăng ký'],data[key].map(r=>[r.label,r.count,ratio(r.percent)]),[3]);
     if(selected.includes('positions'))group('positions','Chức vụ');
     if(selected.includes('sizes'))group('sizes','Quy mô');
