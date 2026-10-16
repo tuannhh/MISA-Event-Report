@@ -1,0 +1,7 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import ExcelJS from 'exceljs';
+import {readFile,parseSheetUrl} from '../server/ingestion.js';
+test('xlsx parser handles selected tab, Vietnamese headers and cached formula results',async()=>{const wb=new ExcelJS.Workbook();wb.addWorksheet('Notes').addRow(['Not data']);const ws=wb.addWorksheet('Đăng ký');ws.addRow(['Họ và tên','Chức vụ','Thời gian submit','Số điện thoại']);ws.addRow(['An','CEO/Giám đốc',new Date('2026-10-14T12:00:00Z'),'0901234567']);const b=Buffer.from(await wb.xlsx.writeBuffer());const r=await readFile(b,'sample.xlsx','Đăng ký',1);assert.equal(r.raw.length,1);assert.equal(r.raw[0]['Số điện thoại'],'0901234567');assert.equal(r.raw[0]['Thời gian submit'],'2026-10-14T12:00:00.000+07:00');assert.equal(r.tabs.length,2);});
+test('CSV accepts BOM and rejects ambiguous duplicate headers',async()=>{const r=await readFile(Buffer.from('\ufeffChức vụ,Thời gian submit\r\nIT,14/10/2026'),'sample.csv',null,1);assert.equal(r.raw.length,1);await assert.rejects(()=>readFile(Buffer.from('A,A\n1,2'),'dup.csv',null,1),/trùng/);});
+test('Sheet URL allowlist prevents arbitrary fetches and preserves gid',()=>{assert.equal(parseSheetUrl('https://docs.google.com/spreadsheets/d/abc_123/edit#gid=42').gid,'42');assert.throws(()=>parseSheetUrl('https://docs.google.com.evil.test/spreadsheets/d/id/edit'));assert.throws(()=>parseSheetUrl('http://169.254.169.254/'));});

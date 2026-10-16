@@ -1,0 +1,53 @@
+// Run explicitly against an isolated verification environment. Test records are marked QA-.
+// BASE_URL, TEST_EMAIL and TEST_PASSWORD are required. Never targets a production DB directly.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomBytes} from 'node:crypto';
+const origin=process.env.BASE_URL;
+test('end-to-end auth, isolation, snapshots, import, comparison, editing and membership',{skip:!origin},async()=>{
+  const suffix=randomBytes(5).toString('hex');let adminCookie='',viewerCookie='';const created=[];
+  async function request(p,{method='GET',body,cookie=adminCookie,status=200}={}){const r=await fetch(origin+p,{method,headers:{...(body instanceof FormData?{}:{'Content-Type':'application/json'}),Cookie:cookie},...(body?{body:body instanceof FormData?body:JSON.stringify(body)}:{})});const b=await r.json();assert.equal(r.status,status,`${method} ${p}: ${JSON.stringify(b)}`);return {data:b,cookie:r.headers.get('set-cookie')?.split(';')[0]};}
+  const post=(p,body,opts={})=>request(p,{method:'POST',body,...opts});
+  await request('/api/events',{cookie:'',status:401});
+  adminCookie=(await post('/api/login',{email:process.env.TEST_EMAIL,password:process.env.TEST_PASSWORD},{cookie:''})).cookie;
+  const eventA=(await post('/api/events',{name:'QA-A-'+suffix},{status:201})).data;
+  const eventB=(await post('/api/events',{name:'QA-B-'+suffix},{status:201})).data;created.push(eventA.id,eventB.id);
+  assert.match(eventA.slug,/^qa-a-.*-[a-f0-9]{6}$/);
+  const deepLink=await fetch(origin+'/'+eventA.slug+'/thanh-vien');assert.equal(deepLink.status,200);assert.match(await deepLink.text(),/src="\/app.js"/);
+  assert.equal((await request('/api/events/'+eventA.id)).data.slug,eventA.slug);
+  const a=`/api/events/${eventA.id}`,b=`/api/events/${eventB.id}`;
+  const settings=(await request(a)).data.settings;settings.target=10;settings.targets=[{group:'Team',name:'Test',code:'a',target:10}];
+  await request(a+'/settings',{method:'PUT',body:settings});
+  const form=new FormData();form.append('file',new Blob(['Họ và tên,Email,Chức vụ,Thời gian submit,utm_content\nAn,an@example.test,CEO/Giám đốc,14/10/2026 00:05,a\nBinh,b@example.test,IT,15/10/2026 23:59,a\nChi,c@example.test,Chủ doanh nghiệp,bad,unknown']),'test.csv');
+  const stage=(await post(a+'/import/file',form)).data;
+  await post(b+`/import/${stage.id}/commit`,{mapping:stage.mapping},{status:404});
+  const preview=(await post(a+`/import/${stage.id}/preview`,{mapping:stage.mapping})).data;assert.equal(preview.quality.invalidDates,1);
+  const snapshot=(await post(a+`/import/${stage.id}/commit`,{mapping:stage.mapping})).data.id;
+  await post(a+`/import/${stage.id}/commit`,{mapping:stage.mapping},{status:404});
+  const report=(await request(a+'/report?from=2026-10-14&to=2026-10-14&compareFrom=2026-10-15&compareTo=2026-10-15')).data;assert.equal(report.current.total,1);assert.equal(report.current.clevel,1);assert.equal(report.comparison.clevel,0);
+  const filtered=(await request(a+'/report?sourceFilters='+encodeURIComponent(JSON.stringify({utm_content:'a'})))).data;assert.equal(filtered.current.total,2);
+  await request(a+'/report?sourceFilters='+encodeURIComponent(JSON.stringify({missing:'a'})),{status:400});
+  await request(a+'/report?sourceFilters=%7Bbad',{status:400});
+  await request(a+'/report?from=2026-10-15&to=2026-10-14',{status:400});
+  await request(b+'/report?snapshot='+snapshot,{status:404});
+  const invite=(await post(a+'/invite',{email:`qa-${suffix}@example.test`,role:'viewer'})).data;
+  const inviteToken=new URLSearchParams(new URL(invite.url).hash.slice(1)).get('invite');
+  const accepted=await post('/api/accept-invite',{token:inviteToken,name:'QA Viewer '+suffix,password:randomBytes(18).toString('hex')},{cookie:''});viewerCookie=accepted.cookie;
+  await post('/api/accept-invite',{token:inviteToken,name:'QA Viewer '+suffix,password:randomBytes(18).toString('hex')},{cookie:'',status:400});
+  const viewer=(await request('/api/me',{cookie:viewerCookie})).data;
+  const exported=await fetch(origin+a+'/export.xlsx?reports=sources,positions&sourceFilters='+encodeURIComponent(JSON.stringify({utm_content:'a'})),{headers:{Cookie:viewerCookie}});
+  assert.equal(exported.status,200);assert.match(exported.headers.get('content-type'),/spreadsheetml/);assert.equal(Buffer.from(await exported.arrayBuffer()).subarray(0,2).toString(),'PK');
+  await request(b+'/export.xlsx',{cookie:viewerCookie,status:404});
+  assert.equal((await request(a+'/report',{cookie:viewerCookie})).data.current.total,3);
+  await request(b+'/report',{cookie:viewerCookie,status:404});
+  await request(a+'/settings',{cookie:viewerCookie,method:'PUT',body:settings,status:403});
+  await post(a+'/invite',{email:'any@example.test',role:'editor'},{cookie:viewerCookie,status:403});
+  await request(a+`/members/${viewer.id}`,{method:'PATCH',body:{role:'editor'}});
+  const first=(await request(a+'/rows')).data.rows[0];delete first.id;first.name='Updated';first.submitted_at='14/10/2026 00:05';
+  const edits=await Promise.all([1,2].map(id=>fetch(origin+a+'/rows/'+id,{method:'PATCH',headers:{'Content-Type':'application/json',Cookie:viewerCookie},body:JSON.stringify({snapshot,row:first})})));
+  assert.deepEqual(edits.map(r=>r.status).sort(),[200,409]);
+  const old=(await request(a+'/rows?snapshot='+snapshot)).data;assert.equal(old.rows[0].name,'An');
+  await request(a+`/members/${viewer.id}`,{method:'DELETE'});
+  await request(a+'/report',{cookie:viewerCookie,status:404});
+  console.log('QA event IDs (cleanup only these):',created.join(','));
+});

@@ -1,0 +1,47 @@
+name: Verify
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.4
+        env:
+          POSTGRES_DB: events_test
+          POSTGRES_USER: events_test
+          POSTGRES_PASSWORD: ephemeral-ci-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U events_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://events_test:ephemeral-ci-only@localhost:5432/events_test
+      BOOTSTRAP_EMAIL: qa@example.test
+      BOOTSTRAP_PASSWORD: ephemeral-ci-only-password
+      COOKIE_SECURE: 'false'
+      APP_ORIGIN: http://localhost:8080
+      PORT: '8080'
+      SYNC_INTERVAL_SECONDS: '0'
+      BASE_URL: http://localhost:8080
+      TEST_EMAIL: qa@example.test
+      TEST_PASSWORD: ephemeral-ci-only-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Syntax and isolated API tests
+        run: |
+          for file in server/*.js public/app.js; do node --check "$file"; done
+          node server/index.js > /tmp/misa-event-test.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8080/api/health; then break; fi
+            sleep 1
+          done
+          curl --fail http://localhost:8080/api/health
+          npm test
+      - run: npm audit --omit=dev

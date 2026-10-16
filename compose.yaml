@@ -1,0 +1,45 @@
+name: misa-event-insights
+services:
+  db:
+    image: postgres:16.4
+    environment:
+      POSTGRES_DB: events
+      POSTGRES_USER: events
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+    volumes:
+      - event-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U events"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  app:
+    build: .
+    ports: ["127.0.0.1:${APP_PORT:-8096}:8080"]
+    environment:
+      DATABASE_URL: postgresql://events:${DB_PASSWORD}@db:5432/events
+      BOOTSTRAP_EMAIL: ${BOOTSTRAP_EMAIL:-admin@misa.local}
+      BOOTSTRAP_PASSWORD: ${BOOTSTRAP_PASSWORD:?Set BOOTSTRAP_PASSWORD}
+      APP_ORIGIN: http://localhost:${APP_PORT:-8096}
+      COOKIE_SECURE: "false"
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-prapplication-479309}
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/google.json
+      GEMINI_MODEL: gemini-4-argon
+      SYNC_INTERVAL_SECONDS: "300"
+    volumes:
+      - type: bind
+        source: ${GOOGLE_CREDENTIALS_PATH:?Set GOOGLE_CREDENTIALS_PATH}
+        target: /run/secrets/google.json
+        read_only: true
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://localhost:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+volumes:
+  event-data:
