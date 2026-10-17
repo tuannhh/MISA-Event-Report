@@ -60,3 +60,6 @@ Theo phản hồi ảnh: tăng donut, đưa số/% sát tên legend, bỏ tên s
 
 ## 17/10/2026 — mobile ưu tiên số liệu
 Phản hồi chủ dự án: toolbar/filter quá dài và chart thiếu cân đối. Thiết kế lại riêng mobile: menu/panel theo chạm, KPI lên đầu, donut/legend gọn và bố cục tablet, bộ lọc đăng ký ẩn mặc định, thẻ dữ liệu hai cột. Form mobile dùng sheet và vùng chạm dropdown48px. Chỉ thay frontend; giữ API/quyền/dữ liệu.
+
+## 17/10/2026 — Cloud Run và dữ liệu cloud riêng
+Theo yêu cầu chủ dự án, triển khai service Event Report public HTTPS, chưa giới hạn IP; giữ auth/forced password change. Tạo CloudSQL PostgreSQL riêng, SecretManager, CloudRun sync job và Scheduler5phút; dùng ADC thay JSON key. Chuyển dump local không sessions/invitations, đối chiếu dữ liệu, đặt mật khẩu Superadmin ngẫu nhiên riêng cho cloud. Cập nhật script public-access opt-in, pin secret versions/max1instance và allowlist build context. Không thay nghiệp vụ/schema; không sửa volume/tài khoản local. Bằng chứng live ghi tại VERIFICATION.md, thông tin nhạy cảm bàn giao ngoài Git.

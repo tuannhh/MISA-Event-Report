@@ -19,7 +19,7 @@
 
 ## Giới hạn hiện tại
 
-MISA server/IP allowlist chưa triển khai do thiếu máy chủ và danh sách IP. Cloud Run/managed Agent Runtime chưa deploy. Mobile native host/OS accessibility chưa kiểm chứng; không gọi production-ready hoặc compliant toàn bộ MDS/backend standard. Rate limiter RAM, draft restore và một số audit atomic tiếp tục ở active context.
+MISA server/IP allowlist chưa triển khai do thiếu máy chủ và danh sách IP. Cloud Run đã deploy theo phần kiểm chứng17/10bên dưới; managed Agent Runtime chưa deploy. Mobile native host/OS accessibility chưa kiểm chứng; không gọi production-ready hoặc compliant toàn bộ MDS/backend standard. Rate limiter RAM, draft restore và một số audit atomic tiếp tục ở active context.
 
 ## 17/10/2026 — Tự tổng hợp và cập nhật mới nhất
 
@@ -75,3 +75,15 @@ Gemini đã tự tạo nhận xét trên local, KPI không chờ AI. Nguồn She
 ## 17/10/2026 — mobile redesign
 - 38/38 regression tests passed, zero skipped, in isolated QA PostgreSQL. Frontend-only subsequent polish covers sheet forms/focus and wrapping chart labels; no backend/schema edits. Final production build passed (index-CLelQVIE.js).
 - Browser interaction and six-size matrix detailed in UI-VERIFICATION.md. Live data remains134 registrations; temporary UI filters cleared. Original compose project/database volume retained. Native-host limits unchanged.
+
+## 17/10/2026 — Cloud Run deployment
+- Cloud Build `d7c60fb5-fbca-4f56-9e9d-6c826225c522` SUCCESS, source runtime `0899d42`, pinned digest c00ab95c…c5f0d. Không thay application source/schema trong lần triển khai này; baseline38/38 QA ở mục mobile giữ nguyên, không chạy test ghi dữ liệu trên serving database.
+- Cloud SQL mới restore pg_dump thành công với --single-transaction/--exit-on-error. Đối chiếu1event/1user/4snapshots/134active registrations/31goal rows/target1350; sessions0. Admin cloud reset riêng và must_change_password=true. Local không đổi.
+- Cloud Run revision `misa-event-report-00002-ql5` phục vụ100% traffic, APP_ORIGIN HTTPS thật, ingress all, Invoker allUsers được cấp theo yêu cầu không giới hạn IP.
+- Live HTTPS checks: health200, login page200, unauthenticated events401, Superadmin login200, role super_admin/must_change_password=true, business API trước đổi password403, foreign Origin403. Cookie Secure+HttpOnly+SameSiteStrict; logout200 và me401 sau logout. Không đổi mật khẩu initial của người dùng trong test, không còn session test.
+- Job `misa-event-report-sync-l7dvc` Completed=True; synced_at tăng trên cloud, sync_error NULL,134registrations/31goals giữ nguyên. Xác minh actual Sheet qua ADC, không chỉ dựa exit code job.
+- SQL backup/PITR7ngày và deletion protection bật. Restore dump local đã kiểm chứng; chưa drill restore CloudSQL backup.
+- Build upload allowlist kiểm tra116files, không có đường dẫn ngoài Dockerfile/package/index/vite/frontend/server và hai ignorefiles. Không có secrets/dump trong context.
+- Scheduler OAuth dispatch kiểm tra thủ công và lịch15:25UTC thành công; hai execution `misa-event-report-sync-zkjtm`/`misa-event-report-sync-5bsdg` succeeded1, job ENABLED và status không lỗi.
+- Cloud SQL backup on-demand `1792250606197` SUCCESSFUL; backup tự động khi bậtPITR `1792250437208` cũng SUCCESSFUL.
+- Docker build stage `build` thành công với allowlist mới; các lớp npm/Vite cache từ source đã kiểm tra. `git diff --check` đạt.

@@ -1,5 +1,13 @@
-node_modules
-.env
-.git
-secrets
-tests
+# Build only application source. Never send credentials, dumps, or local runtime files.
+**
+!Dockerfile
+!.dockerignore
+!.gcloudignore
+!package.json
+!package-lock.json
+!index.html
+!vite.config.js
+!frontend/
+!frontend/**
+!server/
+!server/**

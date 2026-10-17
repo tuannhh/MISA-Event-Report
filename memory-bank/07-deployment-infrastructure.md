@@ -4,7 +4,7 @@
 
 Docker Compose project `misa-event-insights`: app Node 24 chạy user node, PostgreSQL 16.4 lưu named volume `event-data`; tên volume mặc định `misa-event-insights_event-data`. App bind 127.0.0.1:8096, DB không mở host port. Không đổi tên project/volume khi đổi tên GitHub repository. Container có healthcheck và restart unless-stopped.
 
-Môi trường MISA production chưa có địa chỉ, danh sách IP, chứng thư TLS hay tài khoản triển khai. Chưa deploy Cloud Run; tài liệu cloud là phương án dự phòng, xem `deploy/CLOUD-RUN.md`.
+Môi trường MISA production chưa có địa chỉ, danh sách IP, chứng thư TLS hay tài khoản triển khai. Đã triển khai Cloud Run ngày 17/10/2026, tạm thời không giới hạn IP theo yêu cầu mới; xem `deploy/CLOUD-RUN.md` và phần cloud bên dưới.
 
 ## Cấu hình đang được code đọc
 
@@ -58,7 +58,7 @@ Trước chuyển production: hoàn tất quyền mới, chính sách email/pass
 
 ## Backup, rollback, sự cố
 
-- Chưa có lịch backup tự động hoặc bằng chứng restore drill. RPO/RTO, người trực và kênh báo sự cố: chưa xác định.
+- Cloud SQL đã bật backup hằng ngày/PITR 7 ngày. Local có restore drill trước đây và dump local đã restore sang Cloud SQL mới; chưa có drill từ Cloud SQL backup. RPO/RTO, người trực và kênh báo sự cố: chưa xác định.
 - Sao lưu bằng pg_dump format custom vào vùng bảo mật ngoài Git; copy qua kênh nội bộ, restore thử vào DB cách ly, đối chiếu số bảng/snapshot và kiểm tra báo cáo. Đây là runbook dự kiến, chưa phải kết quả thực thi.
 - Giữ image bất biến và phiên bản cấu hình trước khi nâng cấp. Với migration, chuẩn bị phương án tương thích/khôi phục trước deploy; không rollback DB mù khi có dữ liệu mới.
 - Không `down -v` môi trường đang dùng. Khi lỗi đồng bộ, tắt nguồn nếu cần và giữ snapshot cuối; xem sync_error/log đã lọc; ghi nguyên nhân đã xác minh vào technical traps.
@@ -71,3 +71,13 @@ Trước chuyển production: hoàn tất quyền mới, chính sách email/pass
 CI và bộ test mới gồm 14 test, phải chạy full integration trên stack cách ly để kiểm tra migration, route, export và nguồn. Kết quả cuối và giới hạn xem VERIFICATION.md.
 
 DEFAULT_MEMBER_PASSWORD bắt buộc qua policy (10–128 ký tự đủ hoa/thường/số/đặc biệt), cấp khi tạo user mới. Không đổi password user tồn tại. Vite frontend build trong stage build; runtime serve dist. Backup/restore thử đã chạy trước migration v3, chi tiết VERIFICATION.md.
+
+## Cloud Run — 17/10/2026
+
+Đã triển khai project `prapplication-479309`, region `asia-southeast1`, service `misa-event-report`, SQL riêng `misa-event-report-db` (PostgreSQL16/db-f1-micro), job/Scheduler `misa-event-report-sync` mỗi5phút. URL: https://misa-event-report-784559735000.asia-southeast1.run.app/log-in. Source image commit `0899d42`, digest `sha256:c00ab95cefb1bc2b9f20bc65a1abe625fb38837f12fd2f911626b76cd59c5f0d`; revision có APP_ORIGIN đúng là `misa-event-report-00002-ql5`.
+
+Service ingress all + Run Invoker allUsers theo yêu cầu; auth ứng dụng giữ nguyên, Secure cookie và origin HTTPS. 1CPU/1GiB, min0/max1, concurrency20. SQL không mở authorized network, kết nối Unix socket. Runtime ADC dùng identity đã có quyền đọc Sheet; không deploy JSON key. Ba secret riêng được pin version1. Scheduler dùng identity riêng, quyền Invoker chỉ trên job. API timer tắt; sync job độc lập.
+
+Dữ liệu chuyển:1event/1user/4snapshots/134active rows/31goal rows/target1350. Không chuyển sessions/invitations. Super admin cloud được cấp mật khẩu ngẫu nhiên mới và must_change_password=true; local giữ nguyên. Dump/credentials 0600 ngoài Git. Runtime credentials không nằm trong memory bank.
+
+Build context được giới hạn source qua .dockerignore và .gcloudignore. Runbook cập nhật secret names/version, public-access switch, backup/PITR và rollback. Chưa có load test hay chứng nhận native/production toàn diện.

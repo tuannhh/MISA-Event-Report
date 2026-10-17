@@ -1,6 +1,6 @@
 # MISA Event Report
 
-Ứng dụng báo cáo sự kiện MISA, chạy Docker tại http://localhost:8096. Source được quản lý trong repository riêng tư MISA-Event-Report. Tên Docker project `misa-event-insights` được giữ để bảo toàn volume.
+Ứng dụng báo cáo sự kiện MISA, chạy [Cloud Run](https://misa-event-report-784559735000.asia-southeast1.run.app/log-in) và Docker local tại http://localhost:8096. Source được quản lý trong repository riêng tư MISA-Event-Report. Tên Docker project `misa-event-insights` được giữ để bảo toàn volume.
 
 ## Chức năng hiện tại
 
@@ -42,4 +42,4 @@ Bản local hiện dùng schema v4 và tự cập nhật dữ liệu từ nguồ
 
 `npm ci`, `npm run build`, `npm test`. Integration test chỉ chạy với BASE_URL trỏ môi trường QA riêng; xem `.github/workflows/verify.yml`. [Memory bank](memory-bank/README.md) theo cấu trúc MISA Backend Standard; [bằng chứng kiểm tra](VERIFICATION.md).
 
-Chưa triển khai máy chủ MISA/IP allowlist vì chưa có thông tin máy chủ và danh sách IP. Cloud Run script chỉ là phương án triển khai, chưa chạy. Gemini hiện gọi REST trên Google Cloud; chưa triển khai managed Agent Runtime. Mobile browser đã kiểm tra viewport; chưa có runtime MISA AMIS và thiết bị iOS/Android để chứng nhận native production.
+Chưa triển khai máy chủ MISA/IP allowlist vì chưa có thông tin máy chủ và danh sách IP. Đã triển khai Cloud Run ngày 17/10/2026; theo yêu cầu chủ dự án, cloud tạm thời không giới hạn IP nhưng vẫn bắt đăng nhập/đổi mật khẩu lần đầu. Xem [runbook Cloud Run](deploy/CLOUD-RUN.md). Gemini hiện gọi REST trên Google Cloud; chưa triển khai managed Agent Runtime. Mobile browser đã kiểm tra viewport; chưa có runtime MISA AMIS và thiết bị iOS/Android để chứng nhận native production.
