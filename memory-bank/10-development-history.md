@@ -51,3 +51,6 @@ Mở rộng lựa chọn20/50/100 từ đăng ký sang mọi danh sách và bả
 
 ## 17/10/2026 — làm gọn tab Chi tiết mục tiêu
 Theo khung đỏ chủ dự án chỉ định: bỏ khối tiêu đề/mô tả/cảnh báo giải thích và chú thích công thức; tab mở thẳng bảng kết quả với phân trang20/50/100. Giữ tab, dữ liệu, tự nhận diện Sheet Mục tiêu và cập nhật theo snapshot. Empty state chỉ hướng dẫn tổng quát; chi tiết kỹ thuậtB–I nằm trong memory bank, không áp đặt trên giao diện. Quality metadata và cảnh báo xuất Excel giữ nguyên.
+
+## 17/10/2026 — tối ưu vùng trên dashboard
+Theo ảnh chú thích mới: bỏ cả nút xuất ảnh và Excel; gom bộ lọc, hiển thị %, thông tin dữ liệu, cập nhật ngay vào hàng thao tác trên. Loại dòng mô tả toàn bộ dữ liệu mới nhất, gộp tabs/lựa chọn báo cáo trên desktop để đưa KPI lên sớm. Không đổi phép tính hoặc dữ liệu.

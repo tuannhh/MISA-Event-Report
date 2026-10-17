@@ -59,3 +59,9 @@ Gemini đã tự tạo nhận xét trên local, KPI không chờ AI. Nguồn She
 - Final build index-DlnYPOim.js; 36/36 tests passed again, zero skipped, in isolated QA PostgreSQL. Local Docker updated without changing volume/schema.
 - Browser desktop1440 and mobile composition: target tab shows31 total /20 first-page records, no removed annotation blocks. Screenshot ../.misa-event-report-local/targets-clean-20261017.jpg outside Git. No native-host acceptance claim.
 - Reviewed tracked/untracked publication scope; credential-pattern scan of149 candidate files found no private key/token/service-account JSON. Runtime configuration, credentials, backups and screenshot evidence stay outside repository.
+
+## 17/10/2026 — compact report toolbar, no export buttons
+- Production build passed (index-DpigzaTb.js);36/36 existing tests passed, zero skipped, on isolated QA PostgreSQL. No backend/schema changes.
+- Actual local desktop1440×1000: one57px toolbar holds report controls and create/import actions; first KPI row begins at226.5px. Tabs and report selections share a row. Removed Excel/image buttons and the standalone default-filter summary.
+- Browser verified filter/metadata toggles, percent toggle via its visible label, and target tab hiding percent control. Mobile390×844: root width390, no overflow, both panels toggle, zero export buttons. Viewport reset afterward.
+- Screenshot outside Git: ../.misa-event-report-local/report-toolbar-20261017.jpg. Native MISA AMIS runtime acceptance remains unverified.

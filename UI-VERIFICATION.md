@@ -40,3 +40,6 @@ Desktop1440px: shared pager on event list, audit and all report tables. Target31
 
 ## 17/10/2026 — target panel annotations removed
 Verified actual local app in desktop1440×1000 and mobile composition: retained target tab, automatic data and20/50/100 pager; removed heading/implementation notes and highlighted explanatory blocks.31 total/20 visible records unchanged. Screenshot outside Git: ../.misa-event-report-local/targets-clean-20261017.jpg. Temporary viewport reset. Native-host verification gaps remain unchanged.
+
+## 17/10/2026 — compact toolbar
+Desktop1440×1000: report controls promoted beside page title, exports removed, tabs/selections share row, KPI starts226.5px. Filters and metadata hidden without empty spacer when closed; open/close and percentage-label toggle verified. Mobile390×844: separate composition retains controls, zero export buttons and no root overflow. Target tab hides percentage control. Screenshot ../.misa-event-report-local/report-toolbar-20261017.jpg. This is browser verification; existing native-host/OS accessibility gaps remain.

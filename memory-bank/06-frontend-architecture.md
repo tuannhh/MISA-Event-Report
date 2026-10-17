@@ -32,3 +32,6 @@ RegistrationFilters dùng MCombobox multiple4trường + date range + tìmkiếm
 
 ## 17/10/2026 — làm gọn tab Chi tiết mục tiêu
 Theo khung đỏ chủ dự án chỉ định: bỏ khối tiêu đề/mô tả/cảnh báo giải thích và chú thích công thức; tab mở thẳng bảng kết quả với phân trang20/50/100. Giữ tab, dữ liệu, tự nhận diện Sheet Mục tiêu và cập nhật theo snapshot. Empty state chỉ hướng dẫn tổng quát; chi tiết kỹ thuậtB–I nằm trong memory bank, không áp đặt trên giao diện. Quality metadata và cảnh báo xuất Excel giữ nguyên.
+
+## 17/10/2026 — thanh thao tác báo cáo gọn
+`ReportActions.vue` gom checkbox Hiển thị %, nút Bộ lọc báo cáo (kèm số điều kiện), Thông tin dữ liệu và Cập nhật ngay vào toolbar cùng hàng tiêu đề trên desktop. DesktopPage/MobilePage giữ trạng thái mở panel, reset khi đổi event; ReportFilters/ReportStamp nhận prop open. Filter panel không chiếm hàng khi đóng; bỏ dòng Toàn bộ dữ liệu mới nhất. Desktop gom tabs và lựa chọn báo cáo cùng hàng khi đủ rộng. Hai nút Xuất Excel/Xuất ảnh đã bỏ khỏi cả hai composition; API/helper xuất legacy vẫn giữ để tương thích, không có entry point trên UI. Quyền tạo/nhập dữ liệu và chế độ phiên lịch sử không thay đổi.

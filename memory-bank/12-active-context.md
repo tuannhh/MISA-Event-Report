@@ -23,3 +23,6 @@ Thay đổi tiếp theo 17/10/2026: đã triển khai 7 điều chỉnh dashboar
 
 ## 17/10/2026 — bỏ khối chú thích trong tab mục tiêu
 Giữ tab Chi tiết mục tiêu và bảng phân trang20/50/100. Bỏ tiêu đề lặp, mô tả cộtB–I, các thông báo giải thích phía trên bảng và chú thích công thức phía dưới. Đây là chỉ dẫn triển khai, không phải nội dung giao diện. Không bỏ cơ chế tự nhận diện Sheet Mục tiêu, snapshot hay tính lại kết quả khi nhập/đồng bộ; người dùng không cần thiết lập mục tiêu tracking thủ công. Tên tab được nhận diện bằng quy tắc trước, Gemini hỗ trợ fallback có kiểm tra; thống kê tính xác định ở backend. Giữ dữ liệu quality và cảnh báo trong Excel để đối soát.
+
+## Yêu cầu UI mới nhất — toolbar báo cáo
+Đã bỏ hai nút Xuất ảnh/Xuất Excel trên desktop và mobile theo yêu cầu chủ dự án. Không khôi phục nút từ mô tả cũ về xuất báo cáo. API/helper legacy còn giữ cho tương thích. Các điều khiển bộ lọc, %, thông tin dữ liệu, cập nhật được gom lên trên; bỏ hàng Toàn bộ dữ liệu mới nhất. Tabs và lựa chọn báo cáo cùng hàng khi desktop đủ rộng. Hai panel mở khi bấm nút, tự đóng khi đổi sự kiện; KPI/số liệu/auto sync không đổi.
