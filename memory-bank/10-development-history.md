@@ -57,3 +57,6 @@ Theo ảnh chú thích mới: bỏ cả nút xuất ảnh và Excel; gom bộ l�
 
 ## 17/10/2026 — chart và thành viên tối giản
 Theo phản hồi ảnh: tăng donut, đưa số/% sát tên legend, bỏ tên sự kiện/timestamp lặp và nhận xét Gemini trên cả desktop/mobile. Ngừng request nhận xét tự động. Đổi nhãn Thành viên; form chỉ name/email mặc định Editor, thêm Excel mẫu ba cột STT/Họ và tên/Email. Kiểm chứng 38 tests QA, file mẫu qua importer, UI desktop/mobile; không thay schema hay dữ liệu đang phục vụ.
+
+## 17/10/2026 — mobile ưu tiên số liệu
+Phản hồi chủ dự án: toolbar/filter quá dài và chart thiếu cân đối. Thiết kế lại riêng mobile: menu/panel theo chạm, KPI lên đầu, donut/legend gọn và bố cục tablet, bộ lọc đăng ký ẩn mặc định, thẻ dữ liệu hai cột. Form mobile dùng sheet và vùng chạm dropdown48px. Chỉ thay frontend; giữ API/quyền/dữ liệu.

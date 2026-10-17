@@ -43,3 +43,13 @@ Verified actual local app in desktop1440×1000 and mobile composition: retained 
 
 ## 17/10/2026 — compact toolbar
 Desktop1440×1000: report controls promoted beside page title, exports removed, tabs/selections share row, KPI starts226.5px. Filters and metadata hidden without empty spacer when closed; open/close and percentage-label toggle verified. Mobile390×844: separate composition retains controls, zero export buttons and no root overflow. Target tab hides percentage control. Screenshot ../.misa-event-report-local/report-toolbar-20261017.jpg. This is browser verification; existing native-host/OS accessibility gaps remain.
+
+## 17/10/2026 — mobile redesign
+- Browser dashboard Super admin:320×568,360×640,390×844,430×932,768×1024,1024×768 đều root scrollWidth=clientWidth, không card overflow. KPI top189px; chart donut224px. Desktop/mobile composition vẫn riêng, không phụ thuộc role.
+- Chạm More mở sheet; chuyển sang filter trong cùng dialog; date picker mở và Escape chỉ đóng calendar. Đóng sheet phục hồi focus và bỏ inert nền. Tạo sự kiện mở form sau khi đóng menu, không tạo bản ghi trong QA UI.
+- Registration: chọn cả Đã gọi/Chưa gọi và2chức vụ CEO/Giám đốc/Chủ doanh nghiệp →84kết quả,2nhóm lọc; Xóa lọc →134. Bộ lọc dùng multi-select như desktop; footer nằm riêng khỏi nội dung cuộn.
+- Tablet768px: donut/legend song song, KPI4cột sau total, các chart còn lại chia2cột. Phone390px: donut/legend dọc, số trong tâm và legend; không lặp nhãn phần trăm quanh donut.
+- Evidence ngoài Git: mobile-redesign-dashboard.jpg, mobile-redesign-chart.jpg, mobile-redesign-filters.jpg, mobile-redesign-tablet.jpg trong ../.misa-event-report-local/.
+- Đây là bằng chứng browser; chưa có native host/thiết bị iOS/Android để kiểm chứng OS font/display, keyboard/lifecycle/gesture và toàn bộ route×role trên host. Không gọi đây là chứng nhận native production. Không thêm quyền thiết bị hay notification.
+
+Final checks:320×568 filter sheet body scrolls, footer bottom568px and no panel overflow. Mobile popup option heights48–56px. Create-event form opens as one sheet, focus on Đóng; closed without saving. Desktop1440px: no root/card overflow, retained toolbar and outside donut labels. Temporary viewport override reset.

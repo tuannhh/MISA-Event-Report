@@ -30,6 +30,7 @@ const emit = defineEmits([
 ])
 
 const open = ref(false)
+const mobilePopover = ref(false)
 const wrapperRef = ref(null)
 const inputRef = ref(null)
 const popoverRef = ref(null)
@@ -165,6 +166,7 @@ function firstEnabledIndex() {
 
 function openPopover() {
   if (props.disabled || open.value) return
+  mobilePopover.value=!!wrapperRef.value?.closest('.mds-mobile-app')
   open.value = true
   // Đặt con trỏ vào item đang chọn (single) hoặc item khả dụng đầu tiên
   let idx = -1
@@ -458,6 +460,7 @@ onBeforeUnmount(() => {
       <div
         v-if="open"
         ref="popoverRef"
+        :class="{'mobile-options':mobilePopover}"
         role="listbox"
         :aria-multiselectable="multiple || undefined"
         :style="popoverStyle"

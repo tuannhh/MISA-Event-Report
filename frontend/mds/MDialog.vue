@@ -1,10 +1,11 @@
 <script setup>
-import { computed, watch, onBeforeUnmount } from 'vue'
+import { computed, ref, nextTick, watch, onBeforeUnmount } from 'vue'
 import MIcon from './MIcon.vue'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   title: { type: String, default: '' },
+  presentation: { type: String, default: 'dialog' },
   // Chiều rộng dialog — nhận số (px) hoặc chuỗi CSS
   width: { type: [String, Number], default: '480px' },
   // 'default': dialog thông báo (chỉ nút Đóng) | 'confirm': xác nhận hành động
@@ -18,6 +19,8 @@ const props = defineProps({
   cancelText: { type: String, default: 'Hủy' },
 })
 
+const panel=ref(null);
+let returnFocus=null;
 const emit = defineEmits(['update:modelValue', 'confirm', 'cancel'])
 
 // MDS: KHÔNG chồng (stack) nhiều dialog — luồng nhiều bước dùng Popup.
@@ -56,13 +59,21 @@ function onConfirm() {
 
 // MDS: phím Esc đóng dialog (tương đương Hủy)
 function onKeydown(e) {
-  if (e.key === 'Escape') onCancel()
+  // A popup inside the sheet consumes Escape first (combobox/date picker).
+  if (e.key === 'Escape' && !e.defaultPrevented) onCancel()
+  if(props.presentation==='sheet'&&e.key==='Tab'&&panel.value?.contains(document.activeElement)){
+    const fields=[...panel.value.querySelectorAll('button:not([disabled]),input:not([disabled]),[tabindex="0"],a[href]')].filter(el=>el.getClientRects().length);
+    const first=fields[0],last=fields.at(-1);
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+  }
 }
 
 watch(
   () => props.modelValue,
-  (open) => {
+  async (open) => {
     if (open) {
+      if(props.presentation==='sheet')returnFocus=document.activeElement;
       window.__mdsOpenDialogs.count++
       if (window.__mdsOpenDialogs.count > 1) {
         console.warn('[MDS] MDialog: không hỗ trợ dialog chồng dialog — dùng Popup cho luồng nhiều bước.')
@@ -70,13 +81,17 @@ watch(
       document.addEventListener('keydown', onKeydown)
       // Khóa scroll nền khi dialog mở
       document.body.style.overflow = 'hidden'
+      if(props.presentation==='sheet'){await nextTick();panel.value?.querySelector('button')?.focus();}
     } else {
       window.__mdsOpenDialogs.count = Math.max(0, window.__mdsOpenDialogs.count - 1)
       document.removeEventListener('keydown', onKeydown)
       document.body.style.overflow = ''
+      if(props.presentation==='sheet'){await nextTick();if(returnFocus?.isConnected)returnFocus.focus();}
     }
   }
 )
+
+watch(()=>props.title,async()=>{if(props.modelValue&&props.presentation==='sheet'){await nextTick();panel.value?.querySelector('button')?.focus();}})
 
 onBeforeUnmount(() => {
   if (props.modelValue) {
@@ -93,11 +108,14 @@ onBeforeUnmount(() => {
       <div
         v-if="modelValue"
         class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4"
+         :class="{'mds-mobile-app mobile-sheet': presentation === 'sheet'}"
         role="dialog"
         aria-modal="true"
         :aria-label="title"
+        @click.self="presentation==='sheet'&&onCancel()"
       >
         <div
+          ref="panel"
           class="mds-dialog-panel flex max-h-[calc(100vh-64px)] w-full flex-col rounded-lg bg-[var(--mds-bg)] shadow-xl"
           :style="{ maxWidth: widthStyle }"
         >
@@ -118,7 +136,7 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Body -->
-          <div class="relative overflow-y-auto px-5 py-2 text-[13px] leading-[18px] text-[var(--mds-text)]">
+          <div class="mds-dialog-body relative overflow-y-auto px-5 py-2 text-[13px] leading-[18px] text-[var(--mds-text)]">
             <slot />
           </div>
 

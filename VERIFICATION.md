@@ -71,3 +71,7 @@ Gemini đã tự tạo nhận xét trên local, KPI không chờ AI. Nguồn She
 - Template headers exactly STT/Họ và tên/Email, no sample accounts. Artifact-tool preview inspected; OOXML namespace compatibility fixed for ExcelJS. Served localhost asset bytes match the tested source workbook.
 - Desktop1440×1000: donut full outside labels, compact name/value legend, KPI starts171px; no repeated event/latest row or Gemini panel. Add-member dialog has exactly name/email, no role radio. Mobile390×844: full donut labels and wrapped legend, root scrollWidth390. Native host acceptance remains unverified.
 - Evidence outside Git: ../.misa-event-report-local/dashboard-member-polish-20261017.jpg and dashboard-member-mobile-20261017.jpg. Original Docker project/database volume retained; no production test records created.
+
+## 17/10/2026 — mobile redesign
+- 38/38 regression tests passed, zero skipped, in isolated QA PostgreSQL. Frontend-only subsequent polish covers sheet forms/focus and wrapping chart labels; no backend/schema edits. Final production build passed (index-CLelQVIE.js).
+- Browser interaction and six-size matrix detailed in UI-VERIFICATION.md. Live data remains134 registrations; temporary UI filters cleared. Original compose project/database volume retained. Native-host limits unchanged.
