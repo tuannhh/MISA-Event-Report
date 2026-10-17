@@ -4,7 +4,7 @@
 
 1. Số liệu bảng/chart được tính xác định tại backend. Gemini chỉ gợi ý mapping và diễn giải; lỗi AI không được thay bằng nội dung giả.
 2. Mặc định mỗi dòng là một lượt đăng ký; C-Level gồm CEO/Giám đốc và Chủ doanh nghiệp. Cấu hình được sửa riêng từng sự kiện. UTC+7, lọc theo thời gian submit, bao gồm ngày đầu/cuối.
-3. Luôn ghi rõ tử số/mẫu số. Theo yêu cầu trực tiếp 16/10/2026, ô KPI có nhãn “Tỷ lệ C-Level” trên tổng quan phải dùng **tổng lượt đăng ký / tổng mục tiêu sự kiện**. Đây là nhãn nghiệp vụ được yêu cầu, cùng công thức với “Hoàn thành mục tiêu”; không dùng để thay nghĩa trường `clevel_share` của API/bảng chi tiết.
+3. Luôn ghi rõ tử số/mẫu số. Theo yêu cầu mới ngày 17/10/2026, “Tỷ lệ C-Level” = số đăng ký C-Level / tổng mục tiêu sự kiện (`clevel_completion`); `completion` = tổng đăng ký / mục tiêu, `clevel_share` = C-Level / đăng ký. Yêu cầu mới thay thế công thức nhãn KPI ngày 16/10.
 4. Giữ bản nhập cũ khi nguồn lỗi; thay active snapshot và lưu dữ liệu trong cùng transaction. Truy vấn snapshot/import phải gắn event_id, staging còn gắn user_id.
 5. Phải phân biệt data registration với tài khoản thành viên của ứng dụng. Import lead không được tạo tài khoản đăng nhập.
 6. Bốn cấp quyền v3 đã triển khai; bảo vệ backend và kiểm tra quyền lại ở mỗi request. Các gap còn lại nằm trong [12](12-active-context.md).

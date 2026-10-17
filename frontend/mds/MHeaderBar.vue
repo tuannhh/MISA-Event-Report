@@ -109,10 +109,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
     </div>
 
     <div class="flex min-w-0 flex-1 justify-center px-2">
-      <div class="relative w-full max-w-[500px]">
+      <slot name="search"><div class="relative w-full max-w-[500px]">
         <input ref="searchInput" v-model="searchText" type="search" :placeholder="searchPlaceholder" class="peer h-8 w-full rounded-lg pl-9 pr-3 outline-none transition-colors" :class="searchClass" @focus="onSearchFocus" @keydown.enter="onSearchEnter" />
         <MIcon name="search" :size="16" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" :class="searchIconClass" />
-      </div>
+      </div></slot>
     </div>
 
     <!-- gap-2 = 8px: đúng redline quy chuẩn (khoảng cách giữa các icon button trên header) -->

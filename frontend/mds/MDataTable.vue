@@ -12,12 +12,14 @@ const props = defineProps({
   columns: { type: Array, required: true },
   rows: { type: Array, default: () => [] },
   rowKey: { type: String, default: 'id' },
+  rowClass: { type: Function, default: () => '' },
   // Hiện cột checkbox đầu tiên để chọn dòng
   selectable: { type: Boolean, default: false },
   // Overlay spinner đè lên bảng khi đang tải dữ liệu
   loading: { type: Boolean, default: false },
   // Phân trang kiểu prev/next KHÔNG đánh số trang (spec MDS mục Paging:
   // SaaS dữ liệu lớn dùng tìm kiếm/lọc thay vì nhảy trang theo số)
+  pagination: { type: Boolean, default: true },
   page: { type: Number, default: 1 },
   hasNext: { type: Boolean, default: false },
   pageSize: { type: Number, default: 20 },
@@ -366,7 +368,7 @@ function changePageSize(e) {
             v-for="row in rows"
             :key="row[rowKey]"
             class="group h-[var(--mds-dt-row-height,40px)] cursor-pointer border-b border-[var(--mds-border-light,var(--mds-border))] transition-colors last:border-b-0 hover:bg-[var(--mds-bg-hover-soft)]"
-            :class="isSelected(row[rowKey]) ? 'bg-[var(--mds-brand-50)]' : ''"
+            :class="[rowClass(row),isSelected(row[rowKey]) ? 'bg-[var(--mds-brand-50)]' : '']"
             @click="emit('row-click', row)"
           >
             <!-- Cột checkbox: click KHÔNG trigger row-click (stop) -->
@@ -393,7 +395,7 @@ function changePageSize(e) {
             <td
               v-if="hasRowActions"
               class="sticky right-0 border-l border-[var(--mds-border-light,var(--mds-border))] bg-[var(--mds-bg)] px-2 transition-colors group-hover:bg-gradient-to-r group-hover:from-transparent group-hover:to-[var(--mds-brand-50)]"
-              :class="isSelected(row[rowKey]) ? 'bg-[var(--mds-brand-50)]' : ''"
+              :class="[rowClass(row),isSelected(row[rowKey]) ? 'bg-[var(--mds-brand-50)]' : '']"
               @click.stop
             >
               <div class="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -414,6 +416,7 @@ function changePageSize(e) {
     <!-- Footer phân trang: prev/next KHÔNG đánh số trang (spec MDS mục 9), thêm
          nút về đầu/về cuối + range khi biết total (spec data-table.md mục 13 TablePaging) -->
     <div
+      v-if="pagination"
       class="flex h-12 shrink-0 items-center justify-between gap-4 border-t border-[var(--mds-border)] bg-[var(--mds-bg)] px-4 text-[13px] leading-[18px] text-[var(--mds-text)]"
     >
       <div class="text-[var(--mds-text-muted)]">

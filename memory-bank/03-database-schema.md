@@ -119,3 +119,11 @@ Thay đổi quyền/account/channel tiếp theo phải có migration thực thi 
 ## Migration v3
 
 Thực thi một lần dưới advisory lock và transaction: thêm ba cột users, events.mode; đổi owner → admin; xóa membership viewer vì quyền đọc đã mặc định; CHECK chỉ admin/editor; xóa invitations và sessions cũ. Bootstrap vô hiệu tài khoản ngoài miền MISA, tạo Super admin được cấu hình nếu chưa có, không reset mật khẩu tài khoản hiện hữu. Giữ events, snapshots, imports, audit và UUID/slug. Invitations chỉ còn bảng tương thích lịch sử, không có API sử dụng.
+
+17/10/2026: không đổi schema SQL. JSON events.source thêm staffDimensionsVersion=1 khi nhập mới/sync để bổ sung chiều nhân viên cho nguồn Sheet cũ một lần. Các cột nhân viên nằm trong snapshots.rows[].source_details, không tạo tài khoản users. Staging automatic dùng cùng bảng imports và transaction publish hiện có; snapshot lịch sử không bị sửa.
+
+## Dashboard và trạng thái gọi — 17/10/2026
+Snapshot JSONB mới thêm `utm_content` (đúng cột UTM, không lấy utm_term thay thế), `call_status` (`called`, `not_called`, `unknown`) và `call_attempts` (tên cột, giá trị gốc từng lần gọi). Không đổi bảng/cột SQL, không cần migration DDL. Snapshot lịch sử thiếu trường gọi vẫn đọc được, tính vào chưa xác định. Lần đồng bộ Sheet kế tiếp chuẩn hóa lại từ nguồn, fingerprint mới tạo snapshot; không sửa snapshot cũ. File cũ cần nhập lại để bổ sung dữ liệu gọi chưa từng được lưu.
+
+## Schema v4 — mục tiêu theo phiên (17/10/2026)
+`snapshots.target_plan jsonb NULL`: version, label, range B:I, method (headers/gemini), target, leafSum, rows (id/name/code/kind/parent/share/target), retained nếu dùng lại kế hoạch từ bản nhập trước. Không lưu kết quả tính sẵn F:I; luôn tính theo registrations và bộ lọc. Không backfill vào snapshot lịch sử. Baseline trong db.js và delta idempotent server/migrations/20261017_target_plan.sql. Tiếp tục runner transaction/advisory lock hiện có; khác chuẩn manual migration là gap kiến trúc đã có, chưa thay vòng đời triển khai trong lượt này.

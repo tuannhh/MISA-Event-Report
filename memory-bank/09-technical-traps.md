@@ -47,3 +47,15 @@ Kiểm thử API có thể pass trong khi nút lọc không chạy. Khi kiểm t
 - Cần rebuild Docker mới thấy UI Vite, Express serve dist không public.
 - Hai localhost port dùng chung cookie host; QA login có thể thay session cookie local app, cần đăng nhập lại đúng môi trường.
 - Mọi viewer thấy mọi event là yêu cầu sản phẩm, không dùng test isolation v1 để áp đặt membership read. Isolation vẫn áp dụng snapshot/import và quyền ghi.
+
+## 17/10/2026 — Nhập xong nhưng KPI bằng 0
+
+Bằng chứng ban đầu: event có 134 raw rows trong imports nhưng active_snapshot_id null, chưa có snapshots. UI trước đây đọc nguồn xong còn đòi preview/commit, khiến người dùng tưởng đã nhập hoàn tất. Luồng automatic mới tự publish khi hợp lệ, chỉ dừng để sửa mapping nếu cần. Sau import phải xóa bộ lọc cũ và lựa chọn snapshot lịch sử; nếu không số liệu mới có thể vẫn bị che.
+
+MUpload: inputRef.click() nổi lên label @click.prevent sẽ bị hủy default action mở picker. @click.stop ở input chặn vòng này; đã kiểm chứng bằng chọn CSV thật. Không coi thao tác bấm upload không lỗi JS là bằng chứng picker hoạt động.
+
+- Khi bỏ dấu tiếng Việt để nhận diện trạng thái gọi, phải xử lý cả Đ và đ (hoặc lowercase trước); “Đã liên hệ” viết hoa từng làm KPI gọi bị thiếu. Regression tests có tình huống này.
+- Không dùng trường tracking làm utm_content vô điều kiện vì mapping legacy có thể lấy utm_term. Snapshot mới lưu riêng utm_content; snapshot cũ chỉ fallback đúng tên cột trong source_details.
+- Với hybrid, filter Online/Offline phải bao gồm both giống KPI; nếu dùng phép bằng tuyệt đối sẽ làm tổng sau lọc khác số thẻ.
+
+17/10/2026: normalize tiêu đề phải xử lý cả Đ/đ và xuống dòng. .gitignore có *.sql nên cần ngoại lệ !server/migrations/*.sql cho delta v4. Không gửi dữ liệu mục tiêu nhân viên qua AI diễn giải. Sheet mẫu có tổng mục tiêu khác tổng chi tiết và các công thức tỷ lệ không nhất quán; không suy diễn/bù mục tiêu, hiển thị chênh lệch và ghi rõ mẫu số trongapp.

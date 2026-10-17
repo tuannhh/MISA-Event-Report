@@ -79,6 +79,12 @@ function onDrop(e) {
 
     <!-- Dropzone: click hoặc kéo-thả để chọn file -->
     <label
+      role="button"
+      :tabindex="disabled ? -1 : 0"
+      :aria-disabled="disabled"
+      :aria-label="label"
+      @keydown.enter.prevent="openBrowse"
+      @keydown.space.prevent="openBrowse"
       class="flex h-[60px] w-full max-w-[420px] items-center justify-center rounded-lg border-[1.5px] border-dashed text-center text-[12px] transition-colors"
       :class="[
         disabled
@@ -99,6 +105,7 @@ function onDrop(e) {
         :accept="accept"
         :multiple="multiple"
         :disabled="disabled"
+        @click.stop
         @change="onInputChange"
       />
     </label>

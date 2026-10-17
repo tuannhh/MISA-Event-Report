@@ -22,7 +22,7 @@ export function memberRoutes(app,{read,owner,upload}){
   app.post('/api/events/:eventId/members',owner,async(req,res)=>{const row=account.parse(req.body);checkGrant(req,row.role);await transaction(async c=>{await provision(c,row,req.event.id);await audit(c,req.event.id,req.user.id,'member.added',{email:row.email,role:row.role});});res.status(201).json({ok:true});});
   app.post('/api/events/:eventId/members/import/preview',owner,upload.single('file'),async(req,res)=>{
     if(!req.file)fail(400,'Chọn file Excel có Họ và tên, Email.');
-    const data=await readFile(req.file.buffer,req.file.originalname);if(data.raw.length>500)fail(400,'Tối đa 500 thành viên mỗi lần nhập.');
+    const data=await readFile(req.file.buffer,req.file.originalname,undefined,undefined,{goals:false});if(data.raw.length>500)fail(400,'Tối đa 500 thành viên mỗi lần nhập.');
     const name=data.headers.find(h=>['ho va ten','name'].includes(norm(h))),email=data.headers.find(h=>norm(h)==='email');
     if(!name||!email)fail(400,'File cần hai cột Họ và tên, Email.');
     const seen=new Set(),errors=[],rows=[];

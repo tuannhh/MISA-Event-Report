@@ -11,6 +11,7 @@ backups/
 uploads/
 *.dump
 *.sql
+!server/migrations/*.sql
 *.pem
 *.key
 *service-account*.json

@@ -1,4 +1,5 @@
 <script setup>
+import PagedRecords from './PagedRecords.vue';
 // Separate mobile list composition; no desktop platform header or sidebar.
 import {s,filteredEvents,run,openEvent,showEventList,isSuper,roleNames,dateText,number} from './store';
 import {canEditEvent} from './navigation';
@@ -19,8 +20,8 @@ const modes={online:'Online',offline:'Offline',hybrid:'Online và offline'};
       <label class="field">Tìm sự kiện<MInput v-model="s.eventSearch" placeholder="Nhập tên sự kiện" clearable /></label>
       <MTabs v-model="s.eventAccess" variant="pill" :tabs="[{key:'all',label:'Tất cả'},{key:'edit',label:'Được sửa'},{key:'view',label:'Chỉ xem'}]" />
       <div class="toolbar"><span class="muted">{{number(filteredEvents.length)}} sự kiện</span><MButton variant="secondary" :loading="s.busy" @click="run(()=>showEventList(false))">Làm mới</MButton></div>
-      <section class="card mobile-list" aria-label="Các sự kiện">
-        <article v-for="event in filteredEvents" :key="event.id" class="stack" :aria-label="event.name">
+<PagedRecords :rows="filteredEvents" v-slot="{rows:pageRows}">      <section class="card mobile-list" aria-label="Các sự kiện">
+        <article v-for="event in pageRows" :key="event.id" class="stack" :aria-label="event.name">
           <div class="row justify-between"><MTag :color="canEditEvent(event)?'brand':'neutral'">{{roleNames[event.role]}}</MTag><span class="muted">{{modes[event.mode]}}</span></div>
           <h2 class="!mb-0">{{event.name}}</h2>
           <p class="muted">Ngày tổ chức: {{dateText(event.event_date)}}</p>
@@ -29,6 +30,7 @@ const modes={online:'Online',offline:'Offline',hybrid:'Online và offline'};
         </article>
         <MEmptyState v-if="!filteredEvents.length&&!s.busy" :type="s.events.length?'no-result':'initial'" :title="s.events.length?'Không có sự kiện phù hợp':'Chưa có sự kiện'" />
       </section>
+</PagedRecords>
     </main>
   </div>
 </template>

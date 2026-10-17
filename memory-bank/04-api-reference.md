@@ -81,3 +81,22 @@ Prefix `P = /api/events/:eventId`. Tất cả route trong nhóm cần E.
 ## Query hình thức v3
 
 Report/insights/export thêm mode=all|online|offline|both|unknown (mặc định all), áp dụng cả hai kỳ. Summary thêm modes[{value,label,count,percent}]. Các nhóm loại trừ nhau. Excel luôn thêm sheet Hình thức mỗi kỳ; còn lại theo reports được chọn.
+
+## 17/10/2026 — Nhập tự động và báo cáo mới nhất
+
+- POST import/file nhận multipart `automatic=true`; import/sheet nhận JSON `automatic:true`. Khi mapping hợp lệ, tự công bố và trả StageResult + `committed:true,snapshotId`; thiếu mapping/dữ liệu rỗng trả `needsMapping:true,notice`, giữ snapshot cũ. Không truyền automatic vẫn dùng staging thủ công.
+- GET `P/imports/pending`, quyền E: trả phiên staging mới nhất còn hạn của chính user trong event hoặc null; không trả staging của người khác.
+- POST `P/refresh`, quyền R + expensive limiter: chỉ đồng bộ nguồn đã enabled; không nhận URL/mapping từ client. Trả `{changed,skipped?}` hoặc `{changed:false,warning}` nếu Google lỗi. File/nguồn tắt không bị thay đổi. Cooldown 15 giây kiểm tra trong transaction dưới row lock.
+- Report thêm `generatedAt,totalRows,source:{enabled,checkedAt,error}`. Mặc định không có date/snapshot filter là toàn active snapshot. `sourceDimensions` lấy toàn snapshot sau dedup để luôn giữ lựa chọn nhân viên/nguồn ngay cả khi lọc ngày rỗng; số liệu và Excel vẫn dùng đúng bộ lọc.
+
+## Bổ sung gọi xác nhận và hai hình thức — 17/10/2026
+`report.current/comparison` thêm `called`, `call_rate`, `call_unknown`, `attendance` (chỉ online/offline). `modes` giữ bốn giá trị để tương thích và ghi chú thiếu/cả hai. Lọc `mode=online/offline` bao gồm bản ghi `both`, khớp KPI; `all/both/unknown` cũ vẫn được API hỗ trợ. `rows` trả `call_status`, `call_attempts`, `utm_content`. PATCH row nhận `call_status` enum tùy chọn để client cũ không bị lỗi; sửa trạng thái tạo snapshot và xóa chi tiết lần gọi cũ trên dòng đã sửa. Mapping import là partial record có whitelist keys; hai cột bắt buộc vẫn được kiểm tra ở normalizeRows. Excel mặc định không có Mục tiêu, chỉ xuất sheet Hình thức với event hybrid và hai dòng Online/Offline; có tử số/mẫu số và tỷ lệ gọi ở Tổng quan.
+
+## Bổ sung 17/10/2026 — mục tiêu và lọc danh sách
+- GET rows: `pageSize` chỉ 20/50/100 (mặc định20); `filters` JSON object strict với call_status/position/utm_content/company, mỗi trường mảng tối đa100 chuỗi; `from`,`to` ISO ngày UTC+7 inclusive. OR trong trường, AND giữa trường. Lọc trước phân trang; tự kẹp page khi hết dữ liệu. Trả options từ toàn bộ phiên, hasTaxId, page/pageSize/total. q cũng tìm phone/tax_id.
+- Report.current/comparison thêm clevel_completion và targetPlan (kế hoạch theo snapshot + kết quả từng dòng + unmatched). target lấy tổng kế hoạch nếu có; source/date/mode/dedup áp dụng chung.
+- Row PATCH hỗ trợ tax_id optional; chuẩn hóa phone/tax_id, giữ target_plan khi tạo snapshot sửa. Báo cáo lịch sử giữ kế hoạch của phiên, dùng cấu hình lọc trùng/C-Level hiện tại như trước.
+- Export reports=targets: bảng Chi tiết mục tiêu8cột tương ứngB:I, số thật và định dạng %, cảnh báo chênh lệch/mã chưa khớp. KPI C-Level dùng clevel_completion.
+
+## Phân trang nhật ký — 17/10/2026
+GET `/api/events/:eventId/audit` vẫn giới hạn Admin/Super admin, đổi từ mảng tối đa100 sang `{rows,total,page,pageSize}`. `page` nguyên1–1000000 (mặc định1), `pageSize` chỉ20/50/100 (mặc định20); sai đầu vào trả400. SQL parameterized count+page cùng snapshot, thứ tự id giảm dần, kẹp trang cuối; không cắt lịch sử ở100bản ghi.

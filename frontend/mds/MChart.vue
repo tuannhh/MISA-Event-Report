@@ -10,6 +10,7 @@
 // - Không hiệu ứng lòe loẹt: chart tĩnh, gọn, ưu tiên đọc số liệu.
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import * as echarts from 'echarts'
+import {currentTheme} from './theme-state'
 
 const props = defineProps({
   option: { type: Object, required: true }, // ECharts option của người dùng — đè được mọi default
@@ -102,7 +103,14 @@ function applySeriesDefaults(series) {
 }
 
 // Ghép default MDS + option người dùng (người dùng đè được mọi default)
+function resolveTokens(value) {
+  if (typeof value === 'string' && /^var\(--[\w-]+\)$/.test(value)) return cssVar(value.slice(4,-1), value)
+  if (Array.isArray(value)) return value.map(resolveTokens)
+  if (isPlainObject(value)) return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,resolveTokens(item)]))
+  return value
+}
 function buildOption(userOption) {
+  userOption = resolveTokens(userOption)
   const fontFamily = cssVar('--mds-font-family', "'Inter', -apple-system, 'Segoe UI', sans-serif")
   const text = cssVar('--mds-text', '#1F2229')
   const textMuted = cssVar('--mds-text-muted', '#99A1B2')
@@ -210,6 +218,7 @@ watch(
 )
 
 watch(() => props.loading, syncLoading)
+watch(currentTheme, () => { if (chart) chart.setOption(buildOption(props.option), {notMerge:true}) })
 
 // Đổi height qua prop → báo ECharts tính lại kích thước
 watch(

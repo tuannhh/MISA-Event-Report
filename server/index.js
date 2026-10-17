@@ -1,3 +1,6 @@
+import {identifiers} from './identifiers.js';
+import {summarizeTargetPlan} from './target-plan.js';
+import {registrationQuery} from './registration-query.js';
 import {isMisaEmail,strongPassword,attendanceMode} from './account-policy.js';
 import {memberRoutes} from './members.js';
 import express from 'express';
@@ -11,9 +14,10 @@ import {pool,transaction,migrate,audit} from './db.js';
 import {authenticate,authorize,bootstrap,hashPassword,verifyPassword,createSession,cookieToken,digest,token,fail} from './auth.js';
 import {defaultSettings,fields,normalizeRows,summarize,parseDate,norm,selectRows} from './domain.js';
 import {readFile,readSheet,suggestMapping,saveSnapshot,syncEvent,syncAll,gemini,discoverSourceColumns} from './ingestion.js';
-import {validateSourceColumns,sourceBreakdowns} from './source-dimensions.js';
+import {validateSourceColumns,sourceBreakdowns,guessSourceColumns} from './source-dimensions.js';
 import {buildReportWorkbook,reportTypes} from './report-export.js';
 import {allocateEventSlug} from './event-slug.js';
+import {insightData} from './insight-data.js';
 const app=express();
 if(process.env.K_SERVICE)app.set('trust proxy',1);
 app.use(helmet({contentSecurityPolicy:{directives:{'script-src':["'self'"],'style-src':["'self'","'unsafe-inline'"],'img-src':["'self'",'data:','blob:'],'upgrade-insecure-requests':process.env.COOKIE_SECURE==='false'?null:[]}}}));
@@ -47,23 +51,52 @@ app.get('/api/events/:eventId',read,(req,res)=>res.json(req.event));
 app.patch('/api/events/:eventId',edit,async(req,res)=>{const b=eventSchema.parse(req.body);await transaction(async c=>{await c.query('UPDATE events SET name=$1,event_date=$2,mode=$3 WHERE id=$4',[b.name,b.event_date||null,b.mode,req.event.id]);await audit(c,req.event.id,req.user.id,'event.updated',b);});res.json({ok:true});});
 app.put('/api/events/:eventId/settings',edit,async(req,res)=>{const settings=settingsSchema.parse(req.body);await transaction(async c=>{await c.query('UPDATE events SET settings=$1 WHERE id=$2',[JSON.stringify(settings),req.event.id]);await audit(c,req.event.id,req.user.id,'settings.updated');});res.json({ok:true});});
 memberRoutes(app,{read,owner,upload});
-async function stage(req,res,data){const id=randomUUID();data.discovery=await discoverSourceColumns(data.headers);data.sourceColumns=data.discovery.columns;await pool.query('INSERT INTO imports(id,event_id,user_id,label,payload) VALUES($1,$2,$3,$4,$5)',[id,req.event.id,req.user.id,data.label,JSON.stringify(data)]);res.json({id,headers:data.headers,sample:data.raw.slice(0,5),count:data.raw.length,mapping:data.mapping,tabs:data.tabs,sheetName:data.sheetName,sourceColumns:data.sourceColumns,discovery:data.discovery});}
+function stageResult(i){const data=i.payload;return {id:i.id,headers:data.headers,sample:data.raw.slice(0,5),count:data.raw.length,mapping:data.mapping,tabs:data.tabs,sheetName:data.sheetName,sourceColumns:[...new Set([...(data.sourceColumns||[]),...guessSourceColumns(data.headers)])].slice(0,12),discovery:data.discovery};}
+async function stage(req,res,data){
+  const automatic=req.body.automatic===true||req.body.automatic==='true';
+  const id=randomUUID();data.discovery=await discoverSourceColumns(data.headers);data.sourceColumns=data.discovery.columns;
+  if(automatic&&(!data.mapping.submitted_at||!data.mapping.position)&&process.env.GOOGLE_CLOUD_PROJECT){
+    try{const suggested=await suggestMapping(data.headers);parseImport(data,suggested);data.mapping=suggested;}catch{data.mappingNotice='Chưa xác định đủ cột. Hãy chọn Thời gian submit và Chức vụ để hoàn tất nhập.';}
+  }
+  await pool.query('INSERT INTO imports(id,event_id,user_id,label,payload) VALUES($1,$2,$3,$4,$5)',[id,req.event.id,req.user.id,data.label,JSON.stringify(data)]);
+  const result=stageResult({id,payload:data});
+  if(automatic){
+    try{parseImport(data,data.mapping,data.sourceColumns);}catch(e){if(e.status!==400)throw e;return res.json({...result,needsMapping:true,notice:data.mappingNotice||e.message});}
+    const snapshotId=await publishImport(req,{mapping:data.mapping,sourceColumns:data.sourceColumns,autoSync:true},id);
+    return res.json({...result,committed:true,snapshotId});
+  }
+  res.json(result);
+}
+app.get('/api/events/:eventId/imports/pending',edit,async(req,res)=>{
+  const {rows:[i]}=await pool.query("SELECT * FROM imports WHERE event_id=$1 AND user_id=$2 AND created_at>now()-interval '1 day' ORDER BY created_at DESC LIMIT 1",[req.event.id,req.user.id]);
+  res.json(i?stageResult(i):null);
+});
 app.post('/api/events/:eventId/import/file',edit,expensive,upload.single('file'),async(req,res)=>{if(!req.file)fail(400,'Chọn file Excel hoặc CSV.');await stage(req,res,await readFile(req.file.buffer,req.file.originalname,req.body.sheetName,Number(req.body.headerRow||1)));});
 app.post('/api/events/:eventId/import/sheet',edit,expensive,async(req,res)=>{const b=z.object({url:z.string().max(1000),sheetName:z.string().max(200).optional(),headerRow:z.number().int().min(1).max(50).default(1)}).parse(req.body);await stage(req,res,await readSheet(b.url,b.sheetName,b.headerRow));});
-async function getImport(req,c=pool){const id=z.string().uuid().parse(req.params.importId);const {rows:[i]}=await c.query("SELECT * FROM imports WHERE id=$1 AND event_id=$2 AND user_id=$3 AND created_at>now()-interval '1 day'",[id,req.event.id,req.user.id]);if(!i)fail(404,'Phiên nhập đã hết hạn.');return i;}
-const mappingSchema=z.record(z.enum(Object.keys(fields)),z.string().max(200));
-function parseImport(payload,mapping,sourceColumns=payload.sourceColumns||[]){const m=mappingSchema.parse(mapping);for(const v of Object.values(m))if(v&&!payload.headers.includes(v))fail(400,'Tên cột không tồn tại trong nguồn dữ liệu.');const columns=validateSourceColumns(payload.headers,sourceColumns);try{return normalizeRows(payload.raw,m,columns);}catch(e){fail(400,e.message);}}
+async function getImport(req,c=pool,importId=req.params.importId){const id=z.string().uuid().parse(importId);const {rows:[i]}=await c.query("SELECT * FROM imports WHERE id=$1 AND event_id=$2 AND user_id=$3 AND created_at>now()-interval '1 day'",[id,req.event.id,req.user.id]);if(!i)fail(404,'Phiên nhập đã hết hạn.');return i;}
+const mappingSchema=z.partialRecord(z.enum(Object.keys(fields)),z.string().max(200));
+function parseImport(payload,mapping,sourceColumns=payload.sourceColumns||[]){const m=mappingSchema.parse(mapping);for(const v of Object.values(m))if(v&&!payload.headers.includes(v))fail(400,'Tên cột không tồn tại trong nguồn dữ liệu.');const columns=validateSourceColumns(payload.headers,sourceColumns);try{const parsed=normalizeRows(payload.raw,m,columns);if(payload.targetNotice)parsed.quality.targetNotice=payload.targetNotice;return parsed;}catch(e){fail(400,e.message);}}
 app.post('/api/events/:eventId/import/:importId/ai',edit,expensive,async(req,res)=>{const i=await getImport(req);const m=await suggestMapping(i.payload.headers);parseImport(i.payload,m);res.json(m);});
 app.post('/api/events/:eventId/import/:importId/preview',edit,async(req,res)=>{const i=await getImport(req);const parsed=parseImport(i.payload,req.body.mapping,req.body.sourceColumns);res.json({quality:parsed.quality,sample:parsed.rows.slice(0,5),summary:summarize(parsed.rows,req.event.settings)});});
-app.post('/api/events/:eventId/import/:importId/commit',edit,async(req,res)=>{
-  const b=z.object({mapping:mappingSchema,autoSync:z.boolean().default(false),sourceColumns:z.array(z.string().max(200)).max(12).optional()}).parse(req.body);
-  const id=await transaction(async c=>{
-    await c.query('SELECT id FROM events WHERE id=$1 FOR UPDATE',[req.event.id]);const i=await getImport(req,c);const columns=validateSourceColumns(i.payload.headers,b.sourceColumns??i.payload.sourceColumns??[]);const parsed=parseImport(i.payload,b.mapping,columns);
-    const snapshot=await saveSnapshot(c,req.event.id,req.user.id,i.label,parsed.rows,parsed.quality);
-    const source=i.payload.source?{...i.payload.source,mapping:b.mapping,sourceColumns:columns,sourceHeaders:i.payload.headers,discovery:i.payload.discovery,enabled:b.autoSync,fingerprint:createHash('sha256').update(JSON.stringify(parsed.rows)).digest('hex')}:null;
+async function publishImport(req,b,importId){
+  return transaction(async c=>{
+    const {rows:[locked]}=await c.query('SELECT * FROM events WHERE id=$1 FOR UPDATE',[req.event.id]);const i=await getImport(req,c,importId);const columns=validateSourceColumns(i.payload.headers,b.sourceColumns??i.payload.sourceColumns??[]);const parsed=parseImport(i.payload,b.mapping,columns);
+    let plan=i.payload.targetPlan||null;
+    if(!plan&&!i.payload.source&&locked.active_snapshot_id){const {rows:[previous]}=await c.query('SELECT target_plan FROM snapshots WHERE id=$1 AND event_id=$2',[locked.active_snapshot_id,locked.id]);if(previous?.target_plan)plan={...previous.target_plan,retained:true};}
+    const snapshot=await saveSnapshot(c,req.event.id,req.user.id,i.label,parsed.rows,parsed.quality,plan);
+    const source=i.payload.source?{...i.payload.source,staffDimensionsVersion:1,mapping:b.mapping,sourceColumns:columns,sourceHeaders:i.payload.headers,discovery:i.payload.discovery,enabled:b.autoSync,fingerprint:createHash('sha256').update(JSON.stringify({rows:parsed.rows,targetPlan:i.payload.targetPlan||null})).digest('hex')}:null;
     await c.query('UPDATE events SET source=$1,sync_error=null,synced_at=now() WHERE id=$2',[source?JSON.stringify(source):null,req.event.id]);
     await c.query('DELETE FROM imports WHERE id=$1',[i.id]);return snapshot;
-  });res.json({id});
+  });
+}
+app.post('/api/events/:eventId/import/:importId/commit',edit,async(req,res)=>{
+  const b=z.object({mapping:mappingSchema,autoSync:z.boolean().default(false),sourceColumns:z.array(z.string().max(200)).max(12).optional()}).parse(req.body);
+  res.json({id:await publishImport(req,b,req.params.importId)});
+});
+// Viewers may trigger only the automatic sync already enabled by an editor.
+app.post('/api/events/:eventId/refresh',read,expensive,async(req,res)=>{
+  try{res.json(await syncEvent(req.event.id,null,{automatic:true,minIntervalMs:15000}));}
+  catch(e){res.json({changed:false,warning:e.status?e.message:'Chưa cập nhật được nguồn. Đang giữ dữ liệu đã nhập gần nhất.'});}
 });
 app.post('/api/events/:eventId/sync',edit,expensive,async(req,res)=>res.json(await syncEvent(req.event.id,req.user.id)));
 app.patch('/api/events/:eventId/source',edit,async(req,res)=>{const b=z.object({enabled:z.boolean()}).parse(req.body);const r=await pool.query("UPDATE events SET source=jsonb_set(source,'{enabled}',$1::jsonb) WHERE id=$2 AND source IS NOT NULL RETURNING id",[JSON.stringify(b.enabled),req.event.id]);if(!r.rowCount)fail(400,'Chưa có nguồn Google Sheet.');await audit(pool,req.event.id,req.user.id,'source.toggled',b);res.json({ok:true});});
@@ -78,29 +111,40 @@ async function report(req){
   const allDimensions=sourceBreakdowns(s.rows);const allowed=new Set(allDimensions.map(d=>d.name));
   if(Object.keys(filters).some(k=>!allowed.has(k)))fail(400,'Cột nguồn khách không tồn tại trong phiên dữ liệu này.');
   r.sourceFilters=filters;r.mode=z.enum(['all','online','offline','both','unknown']).parse(req.query.mode||'all');
-  return {snapshot:{id:s.id,label:s.label,created_at:s.created_at},quality:s.quality,sourceDimensions:sourceBreakdowns(selectRows(s.rows,req.event.settings,r.from,r.to)),current:summarize(s.rows,req.event.settings,r.from,r.to,filters,r.mode),comparison:r.compareFrom?summarize(s.rows,req.event.settings,r.compareFrom,r.compareTo,filters,r.mode):null,range:r};
+  const settings={...req.event.settings,...(s.target_plan?{target:s.target_plan.target}: {})};
+  const summary=(from,to)=>{const data=summarize(s.rows,settings,from,to,filters,r.mode);data.targetPlan=summarizeTargetPlan(s.target_plan,selectRows(s.rows,settings,from,to,filters,r.mode),row=>settings.clevel.some(v=>norm(v)===norm(row.position)));if(data.targetPlan)data.targetSum=data.targetPlan.leafSum;return data;};
+  return {generatedAt:new Date().toISOString(),totalRows:s.rows.length,source:{enabled:!!req.event.source?.enabled,checkedAt:req.event.synced_at,error:req.event.sync_error},snapshot:{id:s.id,label:s.label,created_at:s.created_at},quality:s.quality,sourceDimensions:sourceBreakdowns(selectRows(s.rows,req.event.settings)),current:summary(r.from,r.to),comparison:r.compareFrom?summary(r.compareFrom,r.compareTo):null,range:r};
 }
 app.get('/api/events/:eventId/report',read,async(req,res)=>res.json(await report(req)));
 app.get('/api/events/:eventId/export.xlsx',read,expensive,async(req,res)=>{
-  const selected=req.query.reports===undefined?reportTypes:z.array(z.enum(reportTypes)).max(5).parse(z.string().max(100).parse(req.query.reports).split(',').filter(Boolean));
+  const selected=req.query.reports===undefined?reportTypes.filter(t=>t!=='targets'):z.array(z.enum(reportTypes)).max(5).parse(z.string().max(100).parse(req.query.reports).split(',').filter(Boolean));
   const data=await report(req),wb=await buildReportWorkbook(req.event,data,selected);
   const buffer=await wb.xlsx.writeBuffer();
   res.set('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.set('Content-Disposition','attachment; filename="MISA-Event-Report.xlsx"');res.send(Buffer.from(buffer));
 });
-app.get('/api/events/:eventId/rows',read,async(req,res)=>{const s=await snapshot(req);const page=z.coerce.number().int().min(1).max(10000).parse(req.query.page||1);const query=z.string().max(150).parse(req.query.q||'');const rows=query?s.rows.filter(r=>[r.name,r.company,r.email,r.tracking].some(v=>norm(v).includes(norm(query)))):s.rows;res.json({rows:rows.slice((page-1)*50,page*50),total:rows.length,page});});
+app.get('/api/events/:eventId/rows',read,async(req,res)=>res.json(registrationQuery((await snapshot(req)).rows,req.query)));
 app.patch('/api/events/:eventId/rows/:rowId',edit,async(req,res)=>{
-  const b=z.object({snapshot:z.string().uuid(),row:z.object(Object.fromEntries(Object.keys(fields).map(k=>[k,z.string().max(1000)])))}).parse(req.body);
-  const id=await transaction(async c=>{const {rows:[e]}=await c.query('SELECT * FROM events WHERE id=$1 FOR UPDATE',[req.event.id]);if(e.active_snapshot_id!==b.snapshot)fail(409,'Dữ liệu đã thay đổi. Tải lại trước khi chỉnh sửa.');const {rows:[s]}=await c.query('SELECT * FROM snapshots WHERE id=$1 AND event_id=$2',[e.active_snapshot_id,e.id]);const row=s.rows.find(r=>r.id===req.params.rowId);if(!row)fail(404,'Không tìm thấy dòng.');const dt=parseDate(b.row.submitted_at);if(b.row.submitted_at&&!dt)fail(400,'Thời gian không hợp lệ.');Object.assign(row,b.row,{submitted_at:dt,attendance_mode:attendanceMode(b.row.attendance_mode)});const quality={...s.quality,invalidDates:s.rows.filter(r=>!r.submitted_at).length,missingPosition:s.rows.filter(r=>!r.position).length};const id=await saveSnapshot(c,e.id,req.user.id,'Chỉnh sửa dữ liệu',s.rows,quality);await c.query("UPDATE events SET source=CASE WHEN source IS NULL THEN NULL ELSE jsonb_set(source,'{enabled}','false') END WHERE id=$1",[e.id]);return id;});res.json({id});
+  const b=z.object({snapshot:z.string().uuid(),row:z.object(Object.fromEntries(Object.keys(fields).map(k=>[k,k==='tax_id'?z.string().max(1000).optional():k==='call_status'?z.enum(['called','not_called','unknown']).optional():z.string().max(1000)])))}).parse(req.body);
+  const id=await transaction(async c=>{const {rows:[e]}=await c.query('SELECT * FROM events WHERE id=$1 FOR UPDATE',[req.event.id]);if(e.active_snapshot_id!==b.snapshot)fail(409,'Dữ liệu đã thay đổi. Tải lại trước khi chỉnh sửa.');const {rows:[s]}=await c.query('SELECT * FROM snapshots WHERE id=$1 AND event_id=$2',[e.active_snapshot_id,e.id]);const row=s.rows.find(r=>r.id===req.params.rowId);if(!row)fail(404,'Không tìm thấy dòng.');const dt=parseDate(b.row.submitted_at);if(b.row.submitted_at&&!dt)fail(400,'Thời gian không hợp lệ.');if(row.utm_content!==undefined&&row.utm_content===row.tracking)row.utm_content=b.row.tracking;if(b.row.call_status!==undefined&&b.row.call_status!==row.call_status)row.call_attempts=[];Object.assign(row,identifiers({...row,...b.row}),{submitted_at:dt,attendance_mode:attendanceMode(b.row.attendance_mode)});const quality={...s.quality,invalidDates:s.rows.filter(r=>!r.submitted_at).length,missingPosition:s.rows.filter(r=>!r.position).length};const id=await saveSnapshot(c,e.id,req.user.id,'Chỉnh sửa dữ liệu',s.rows,quality,s.target_plan);await c.query("UPDATE events SET source=CASE WHEN source IS NULL THEN NULL ELSE jsonb_set(source,'{enabled}','false') END WHERE id=$1",[e.id]);return id;});res.json({id});
 });
 app.post('/api/events/:eventId/insights',read,expensive,async(req,res)=>{
   const data=await report(req);
   // Only precomputed group aggregates go to the model; row-level contacts and staff names stay in the app.
-  delete data.current.targets;if(data.comparison)delete data.comparison.targets;
-  const insight=await gemini('Dựa CHỈ trên số liệu tổng hợp, trả tối đa 5 nhận xét ngắn về tiến độ, C-Level, nguồn đăng ký và chênh lệch kỳ. Nêu mẫu số. Không đoán nguyên nhân hoặc thông tin cá nhân. Nêu hạn chế nếu không có kỳ so sánh.',data,{type:'OBJECT',properties:{summary:{type:'STRING'},observations:{type:'ARRAY',items:{type:'STRING'}}},required:['summary','observations']});
+  const aiData=insightData(data);
+  const insight=await gemini('Dựa CHỈ trên số liệu tổng hợp, trả tối đa 5 nhận xét ngắn về tiến độ, C-Level, nguồn đăng ký và chênh lệch kỳ. Nêu mẫu số. Định dạng số theo Việt Nam (1.350; 9,93%). Không đoán nguyên nhân hoặc thông tin cá nhân. Nêu hạn chế nếu không có kỳ so sánh.',aiData,{type:'OBJECT',properties:{summary:{type:'STRING'},observations:{type:'ARRAY',items:{type:'STRING'}}},required:['summary','observations']});
   const parsed=z.object({summary:z.string().max(5000),observations:z.array(z.string().max(3000)).max(8)}).parse(insight);await audit(pool,req.event.id,req.user.id,'ai.report',{snapshot:data.snapshot.id,model:process.env.GEMINI_MODEL||'gemini-4-argon'});res.json({...parsed,model:process.env.GEMINI_MODEL||'gemini-4-argon',snapshot:data.snapshot.id});
 });
-app.get('/api/events/:eventId/audit',owner,async(req,res)=>{const {rows}=await pool.query('SELECT a.action,a.detail,a.created_at,u.name FROM audit a LEFT JOIN users u ON u.id=a.user_id WHERE a.event_id=$1 ORDER BY a.id DESC LIMIT 100',[req.event.id]);res.json(rows);});
+app.get('/api/events/:eventId/audit',owner,async(req,res)=>{
+ const query=z.object({page:z.coerce.number().int().min(1).max(1000000).default(1),pageSize:z.coerce.number().refine(n=>[20,50,100].includes(n)).default(20)}).parse(req.query);
+ // Count and page share one SQL snapshot, including when the requested page is now out of range.
+ const {rows:[result]}=await pool.query(`WITH total AS (SELECT count(*)::int AS total FROM audit WHERE event_id=$1), paging AS (
+ SELECT total,LEAST($2::int,GREATEST(1,CEIL(total::numeric/$3)::int)) AS page FROM total)
+ SELECT total,page,COALESCE((SELECT jsonb_agg(item ORDER BY item.id DESC) FROM (
+ SELECT a.id,a.action,a.detail,a.created_at,u.name FROM audit a LEFT JOIN users u ON u.id=a.user_id WHERE a.event_id=$1 ORDER BY a.id DESC LIMIT $3 OFFSET (paging.page-1)*$3
+ ) item),'[]'::jsonb) AS rows FROM paging`,[req.event.id,query.page,query.pageSize]);
+ res.json({...result,pageSize:query.pageSize});
+});
 app.use('/vendor/chart',express.static(path.resolve('node_modules/chart.js/dist')));
 app.use('/vendor/html2canvas',express.static(path.resolve('node_modules/html2canvas/dist')));
 app.use(express.static(path.resolve('dist')));

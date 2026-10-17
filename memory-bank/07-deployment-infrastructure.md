@@ -34,7 +34,17 @@ Môi trường MISA production chưa có địa chỉ, danh sách IP, chứng th
 3. Từ root source, chạy `docker compose --env-file PATH_TO_RUNTIME_ENV up -d --build`.
 4. Kiểm tra `docker compose --env-file PATH_TO_RUNTIME_ENV ps` và `/api/health`; thử login, import mẫu không nhạy cảm.
 
-Ở máy hiện tại PATH_TO_RUNTIME_ENV là `../../work/runtime.env`. Không in file này vào log. Đổi SUPER_ADMIN_EMAIL/PASSWORD khi DB đã có user không tự đổi tài khoản hiện hữu.
+Ở môi trường bàn giao trước, PATH_TO_RUNTIME_ENV là `../../work/runtime.env`. Bản cài macOS ngày 17/10/2026 dùng `../.misa-event-report-local/runtime.env` ngoài repository. Không in file này vào log. Đổi SUPER_ADMIN_EMAIL/PASSWORD khi DB đã có user không tự đổi tài khoản hiện hữu.
+
+### Bản cài macOS ngày 17/10/2026
+
+- Clone revision `6436c18` vào thư mục `MISA-Event-Report` trong workspace MISA Event Management; đã đọc toàn bộ memory bank trước cấu hình.
+- Chạy từ root repository: `docker compose --env-file ../.misa-event-report-local/runtime.env up -d --build`. Truy cập `http://localhost:8096/log-in`.
+- Giữ project `misa-event-insights` và volume `misa-event-insights_event-data`. Ban đầu tạo DB mới schema v3; hiện đã nâng schema v4 và người dùng đã nhập dữ liệu sự kiện. Dữ liệu không được đồng bộ qua Git.
+- JSON service account do chủ dự án cung cấp nằm ngoài source, mount read-only qua cấu hình hiện có. Runtime env và tệp bàn giao đăng nhập nằm trong thư mục riêng ngoài repository; thư mục mode 700, các tệp mode 600. Không ghi giá trị bí mật vào memory bank.
+- Đã xác minh health HTTP 200, đăng nhập Super admin, forced-password gate trả 403 trước đổi mật khẩu và đăng xuất phiên kiểm tra. Trang đăng nhập được mở và xác minh trên trình duyệt.
+- Đã gọi thật `suggestMapping` với tên cột tổng hợp qua `gemini-4-argon`, nhận JSON mapping hợp lệ. Chưa kiểm tra Sheet cụ thể; không triển khai managed Agent Runtime.
+- Build Docker/Vite thành công; npm audit trong build báo 0 vulnerabilities. Toàn bộ 19/19 tests đạt, không skip, trên Compose QA riêng dùng PostgreSQL tmpfs, không publish port và không mount Google key. Không chạy integration tests trên database local phục vụ người dùng.
 
 ## Kiểm thử
 

@@ -1,5 +1,9 @@
 # 10 — Lịch sử phát triển
 
+## 17/10/2026 — Cài đặt trên máy macOS
+
+Theo yêu cầu kéo project và mở local: clone revision `6436c18`, đọc toàn bộ memory bank, cấu hình runtime ngoài repository và mount read-only JSON Google do chủ dự án cung cấp. Build/chạy Docker tại localhost:8096, giữ tên Compose/volume. Đây là database mới trên máy này (schema v3, một Super admin, chưa có sự kiện); không có dữ liệu vận hành cũ trong Git. Gemini mapping đã kiểm tra bằng header tổng hợp thành công; health/login/forced password/logout đạt; 19/19 tests đạt trên stack QA cách ly. Không sửa mã ứng dụng, không đổi mật khẩu sau bootstrap, không triển khai cloud/managed Agent Runtime. Chi tiết vận hành ở mục 07.
+
 ## 16/10/2026 — Baseline Docker v1
 
 Yêu cầu: thay công việc Excel thủ công bằng báo cáo sự kiện có phân quyền. Đã triển khai import/preview, snapshot, Sheet sync, bảng/chart, khoảng ngày, PNG và Gemini. Schema v1 gồm 9 bảng. Bằng chứng kiểm tra thời điểm đó ở VERIFICATION.md; không suy rộng thành xác nhận production.
@@ -31,3 +35,19 @@ Sau phản hồi chưa thấy thay đổi ở bản chạy: thay frontend vanill
 ## 16/10/2026 — Đăng nhập và chọn sự kiện
 
 Tách URL đăng nhập `/log-in` khỏi route sự kiện, thêm danh sách `/su-kien` sau đăng nhập và `/change-password` cho tài khoản cần đổi mật khẩu. Không tự chọn sự kiện đầu tiên; người dùng chọn card có nhãn quyền riêng sự kiện, tìm kiếm và lọc được chỉnh sửa/chỉ xem. Thêm composition MDS desktop/mobile riêng. API giữ Viewer mặc định toàn ứng dụng và membership Editor/Admin từng event. Thêm test route policy, SPA entrypoints và role sau thu hồi quyền ở một event; 19/19 QA tests đạt. Browser xác nhận URL, quyền giữa hai event, refresh, Back sau logout và mobile không tràn ngang ở 320px. Cập nhật Docker giữ nguyên volume, không migration hay reset mật khẩu.
+
+## 17/10/2026 — Tự tổng hợp dữ liệu mới nhất
+
+Theo yêu cầu tổng hợp ngay sau nhập và khi mở ứng dụng: thêm automatic import, tiếp tục staging của chính user khi chưa có snapshot, reset filter sau import, auto-refresh nguồn Sheet và report, timestamp/warning, nhận xét Gemini tự động gắn với snapshot/filter, nhận diện chiều nhân viên. API/staging thủ công giữ tương thích; không đổi schema, không xóa lịch sử. Sửa MUpload chặn file chooser do bubbling. Số liệu vẫn tính bằng code; AI chỉ nhận diện/diễn giải. Các thay đổi này thay thế bước xác nhận nhập lần hai ở luồng UI mặc định trước đây.
+
+## 17/10/2026 — Gọi xác nhận, biểu đồ và header
+Theo 7 yêu cầu cùng xác nhận của chủ dự án: bổ sung trạng thái gọi qua nhiều lần, KPI đã gọi/tổng đăng ký, cột utm_content; hybrid có hai ô Online/Offline; donut màu phân biệt/chú giải dọc/nhãn ngoài; trend cột và đường cùng số lượng; nguồn mặc định utm_campaign có số và %; bỏ mô-đun mục tiêu trên dashboard; picker lên header, logo về danh sách, tạo sự kiện về toolbar. Cập nhật export, mobile composition, tests và tương thích snapshot cũ. Dữ liệu Google Sheet được bổ sung ở lần sync mới, không sửa lịch sử.
+
+## 17/10/2026 — dashboard gọn, mục tiêu tự động và lọc đăng ký
+Theo 9 yêu cầu bổ sung: thu gọn bộlọc/metadata, cặp chart xu hướng/nguồn, sửa C-Level/mục tiêu, logo base64+Event Report, tab Chi tiết mục tiêu B:I tựnhận diện/đồngbộ/lịch sử; không cần nhập mục tiêu tracking trongsettings. User chốt giữ Không lọc trùng và lựa chọnphone/email. Bổ sungphone/tax_id dạngchuỗi, bộlọc nhiều giátrị và paging20/50/100. Thêm migration v4 và test parser/identifier/filter/import/snapshot/export/AIallowlist. Không đổi tên Dockerproject hay volume đang chạy.
+
+## 17/10/2026 — phân trang thống nhất
+Mở rộng lựa chọn20/50/100 từ đăng ký sang mọi danh sách và bảng, cả desktop/mobile web. Thêm pager dùng chung; nhật ký có API count+page thay giới hạn100 cũ. Bản xuất báo cáo giữ toàn bộ dòng. Không thay schema, quyền hay volume.
+
+## 17/10/2026 — làm gọn tab Chi tiết mục tiêu
+Theo khung đỏ chủ dự án chỉ định: bỏ khối tiêu đề/mô tả/cảnh báo giải thích và chú thích công thức; tab mở thẳng bảng kết quả với phân trang20/50/100. Giữ tab, dữ liệu, tự nhận diện Sheet Mục tiêu và cập nhật theo snapshot. Empty state chỉ hướng dẫn tổng quát; chi tiết kỹ thuậtB–I nằm trong memory bank, không áp đặt trên giao diện. Quality metadata và cảnh báo xuất Excel giữ nguyên.

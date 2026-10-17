@@ -2,11 +2,11 @@
 
 ## Nhập và công bố dữ liệu
 
-1. Editor/owner chọn Excel .xlsx, CSV hoặc Google Sheet; server đọc tối đa 20.000 dòng/100 cột, upload ≤10 MB. headerRow 1–50. XLSX giới hạn kích thước giải nén khai báo 80 MB.
-2. Server lưu staging theo event và người nhập. Header trùng bị từ chối. Ô trống có tên cột dự phòng; dòng hoàn toàn trống bị bỏ.
-3. Người dùng ghép 10 trường; submitted_at và position phải có cột. Có thể nhờ Gemini đề xuất từ header, không gửi cả file cho AI.
-4. Preview trả 5 dòng mẫu, chất lượng và số liệu dự kiến. Không đổi dữ liệu đang xem.
-5. Commit khóa event, đọc staging còn hiệu lực, chuẩn hóa, tạo snapshot, đổi active_snapshot_id và source trong transaction. Staging bị xóa; không dùng lại được.
+1. Editor/Admin/Super admin chọn Excel .xlsx, CSV hoặc Google Sheet; giới hạn vẫn 20.000 dòng/100 cột, upload ≤10 MB, headerRow 1–50, XLSX inflate 80 MB.
+2. Giao diện gửi `automatic=true`: nhận diện nguồn/nhân viên từ header, dùng mapping chuẩn; nếu thiếu cột bắt buộc, thử Gemini với header (không gửi raw contact).
+3. Khi mapping hợp lệ và có dữ liệu, backend tự công bố snapshot trong transaction, giao diện chuyển Tổng quan, bỏ bộ lọc cũ và chọn bản mới nhất. Không còn bắt người dùng xác nhận lần hai với nguồn đã nhận diện đủ.
+4. Nếu chưa đủ mapping hoặc nguồn rỗng: giữ staging, trả needsMapping/notice; chỉ người nhập có quyền sửa ghép cột rồi preview/commit. Không thay active snapshot bằng dữ liệu không hợp lệ.
+5. API staging/preview/commit thủ công vẫn tương thích. Sự kiện chưa có snapshot có thể tiếp tục phiên nhập mới nhất của chính người dùng, còn hạn một ngày, khi mở lại.
 
 File mới là bản đầy đủ thay thế, không nối thêm. Nhập file xóa cấu hình nguồn Sheet. Nhập Sheet lưu mapping và autoSync do người dùng chọn. Lỗi parse/permission/Google giữ nguyên snapshot cũ. Snapshot lưu rows, không lưu bản sao settings; xem lịch sử vẫn tính theo quy tắc/mục tiêu hiện tại.
 
@@ -21,13 +21,13 @@ Nguồn: `server/domain.js`.
 - completion = tổng đăng ký / target ×100; clevel_share = C-Level / tổng đăng ký ×100.
 - Target row có completion = count/target, clevel_share = clevel/count, clevel_completion = clevel/target. Mẫu số 0 trả null, UI hiển thị “—”. Backend làm tròn hai chữ số thập phân.
 - Chức vụ/quy mô/nguồn lấy tổng đăng ký đã lọc làm mẫu số, trống là “Chưa xác định”. Tracking không khớp vẫn tính tổng và nằm trong unmapped.
-- Mục tiêu chi tiết khác tổng sự kiện chỉ cảnh báo, không tự sửa. Target toàn sự kiện lấy settings.target, không lấy targetSum.
+- Mục tiêu chi tiết khác tổng sự kiện chỉ cảnh báo, không tự sửa. Target toàn sự kiện lấy tổng ghi trong bảng mục tiêu của snapshot; nếu chưa có bảng thì dùng settings.target. Không tự thay bằng tổng chi tiết.
 
-**Quyết định riêng ngày 16/10/2026:** ô KPI trên tổng quan mang nhãn “Tỷ lệ C-Level” dùng tổng đăng ký / tổng mục tiêu theo yêu cầu trực tiếp của chủ dự án. Chú thích được đổi cùng công thức; 134/1.350 = 9,93%. Ô này có cùng giá trị với “Hoàn thành mục tiêu”. Chỉ đổi ô được chỉ định; không đổi nghĩa clevel_share ở API/bảng tracking. Tổng đăng ký và C-Level là hai số đếm khác nhau.
+**Yêu cầu thay thế ngày 17/10/2026:** KPI “Tỷ lệ C-Level” dùng C-Level / tổng mục tiêu, API `clevel_completion`; khác `completion` và `clevel_share`. Excel và kỳ so sánh dùng cùng công thức. Ví dụ 84 / 1.350 = 6,22%.
 
 ## Đồng bộ Sheet và sửa dòng
 
-Timer mặc định 300 giây; mỗi batch chọn tối đa 20 nguồn bật và quá 4 phút chưa kiểm tra, cũ trước. syncEvent khóa event xuyên suốt fetch và commit để tránh sync cũ ghi đè file mới. SHA-256 của rows chuẩn hóa không đổi thì không tạo snapshot mới. Lỗi batch ghi sync_error và synced_at, giữ dữ liệu cũ. Manual sync trả lỗi trực tiếp.
+Ngoài timer 300 giây, Tổng quan tự POST refresh khi mở, khi quay lại tab và mỗi 60 giây khi tab đang hiển thị ở bản mới nhất. Nguồn đã bật autoSync được đọc lại; cooldown 15 giây được kiểm tra dưới row lock để gộp cập nhật đồng thời. Viewer có thể yêu cầu kiểm tra nguồn đã được Editor bật, không được thay URL/mapping hoặc bật đồng bộ. Lỗi trả warning và giữ snapshot cũ; phiên lịch sử không tự nhảy sang mới nhất. Timer nền mỗi batch chọn tối đa 20 nguồn bật và quá 4 phút chưa kiểm tra, cũ trước. syncEvent khóa event xuyên suốt fetch và commit để tránh sync cũ ghi đè file mới. SHA-256 của rows chuẩn hóa không đổi thì không tạo snapshot mới. Lỗi batch ghi sync_error và synced_at, giữ dữ liệu cũ. Manual sync trả lỗi trực tiếp.
 
 Sửa dòng yêu cầu snapshot client đang thấy. Backend khóa event; nếu active đã đổi trả 409, yêu cầu tải lại. Nếu hợp lệ tạo snapshot mới, giữ bản cũ và tắt autoSync để tránh Sheet ghi đè thay đổi. Bật lại đồng bộ có thể thay dữ liệu sửa tay; UI cần giải thích rõ điều này.
 
@@ -49,8 +49,28 @@ Export Excel lấy cùng hàm report với bảng/AI, luôn có Tổng quan ch�
 
 ## AI
 
-Gợi ý mapping chỉ nhận header; nhận xét nhận báo cáo tổng hợp, bỏ targets chi tiết trước khi gửi. Raw contact không được chủ động đưa vào prompt. Nhãn group/source vẫn là dữ liệu nguồn, nên cần kiểm soát tránh chứa PII ngoài dự kiến. System instruction coi DATA là dữ liệu, không làm theo lệnh trong ô/nhãn. JSON phản hồi phải đúng schema; lỗi hoặc output thiếu trả lỗi, không bịa kết quả. Đếm số bằng code, không bằng model.
+Gợi ý mapping chỉ nhận header; nhận xét tự chạy sau khi báo cáo có số liệu, dùng snapshot đang hiển thị và bộ lọc hiện tại. Payload AI chỉ gồm KPI, chức vụ, quy mô, nguồn khách tổng hợp, hình thức, xu hướng và khoảng ngày; không gửi sourceDimensions, giá trị lọc nguồn/nhân viên, targets/groups hoặc tên file. Cache trong phiên frontend theo event/snapshot/settings/filter, debounce 600ms, bỏ phản hồi cũ khi đổi bộ lọc. Lỗi AI không làm mất KPI. Raw contact không được chủ động đưa vào prompt. Nhãn group/source vẫn là dữ liệu nguồn, nên cần kiểm soát tránh chứa PII ngoài dự kiến. System instruction coi DATA là dữ liệu, không làm theo lệnh trong ô/nhãn. JSON phản hồi phải đúng schema; lỗi hoặc output thiếu trả lỗi, không bịa kết quả. Đếm số bằng code, không bằng model.
 
 ## v3: hình thức và nguồn tự cập nhật
 
 Event mode online/offline/hybrid là cấu hình tổ chức. Mapping attendance_mode nhận Online/Trực tuyến, Offline/Trực tiếp, Cả hai/hybrid, còn lại unknown. Không tự suy từ event mode. Summary.modes gồm 4 nhóm loại trừ nhau, tổng bằng total; filter mode chọn chính xác một nhóm (online không bao gồm both). Dedup trước source/mode/date. Cùng filter áp dụng current/comparison/Excel. UI chọn nguồn tự gọi report, không cần nút Lọc. Member import là luồng riêng, không thay active lead snapshot.
+
+## Mặc định tổng hợp mới nhất (17/10/2026)
+
+Mặc định không giới hạn tháng/ngày: tổng hợp toàn bộ dữ liệu hiện có của active snapshot; ngày sai vẫn tính trong tổng và có cảnh báo, nhưng bị loại khi lọc ngày. Thời điểm tổng hợp và kiểm tra nguồn hiển thị riêng. File chỉ thay đổi khi nhập file mới; Sheet bật đồng bộ được kiểm tra khi mở và trong lúc xem. Không suy diễn dữ liệu chưa có trong nguồn. Người dùng vẫn chọn được khoảng ngày, kỳ so sánh, nguồn, nhân viên và snapshot lịch sử. Danh sách lựa chọn nguồn lấy từ toàn snapshot sau dedup, không biến mất khi khoảng ngày cho kết quả rỗng.
+
+Các cột Tên tiếp nhận/Nhân viên mời/Người phụ trách được nhận diện và lưu vào source_details để lọc như nguồn. Sheet cũ chưa có staffDimensionsVersion được bổ sung cột nhân viên ở lần sync tiếp theo, tối đa 12 chiều, tạo snapshot mới nếu dữ liệu chuẩn hóa thay đổi. File cũ cần nhập lại để bổ sung cột chưa được lưu; không sửa snapshot lịch sử.
+
+## Điều chỉnh dashboard 17/10/2026 theo xác nhận chủ dự án
+- Tỷ lệ gọi xác nhận = số đăng ký đã được gọi / tổng đăng ký sau cùng bộ lọc, dedup và phiên dữ liệu. Đếm một lần cho mỗi đăng ký dù nhiều lần gọi. Đã liên hệ/đã gọi và kết quả cuộc gọi rõ ràng như không nghe máy, từ chối, hẹn gọi lại được tính đã gọi. Có cột gọi nhưng trống/chưa gọi → not_called. Không có cột, snapshot cũ hoặc văn bản không nhận diện → unknown; không tự coi mọi ô có chữ là đã gọi. Tử số/mẫu số hiện trên KPI, unknown được ghi chú.
+- Nhận diện các cột Gọi xác nhận/Trạng thái gọi/Kết quả gọi/call status và cột được ghép thủ công; không gửi nội dung từng lần gọi vào AI. AI chỉ nhận các tổng called/call_rate/call_unknown.
+- Chỉ event hybrid hiện bộ lọc hình thức và hai KPI Online, Offline. Dòng both tính vào cả hai (ghi chú có thể trùng), unknown không tự gán, được ghi chú ngoài KPI. Sự kiện đơn hình thức ẩn phần này.
+- Xu hướng: cột số đăng ký/ngày + đường nối cùng số lượng, không dùng tỷ lệ mục tiêu. Lấp ngày không đăng ký giữa ngày đầu/cuối bằng 0 cho chuỗi tối đa 3.660 ngày; khoảng dài hơn giữ dữ liệu rời rạc để hạn chế tài nguyên.
+- Chiều nguồn mặc định utm_campaign (không phân biệt hoa thường), chọn chiều khác được giữ khi đổi bộ lọc. Bảng đăng ký dùng đúng utm_content, không thay bằng utm_term.
+- Bỏ mô-đun Mục tiêu & tracking trên tổng quan và lựa chọn báo cáo; vẫn giữ thiết lập mục tiêu tổng và dữ liệu mục tiêu cũ để tương thích.
+
+## Mục tiêu tự động, định danh và bộ lọc (17/10/2026)
+Đọc tab Mục tiêu/Chỉ tiêu/Target/Goal từ workbook nguồn. Nếu tên không rõ và có cấu hình Gemini, gửi tối đa100 tên tab để gợi ý một tên; validate allowlist, không gửi dòng đăng ký. Cache gợi ý tên tab1giờ/tối đa100 bộ tên. Lỗi AI hiển thị thông báo, không bịa mục tiêu. XLSX dùng cached formula values; Google chỉ đọc B1:I501, max500 dòng, dò header20dòng đầu. B=đơn vị,C=tracking,D=tỷ trọng,E=mục tiêu. F–I tính lại từ dữ liệu đăng ký. Mã trùng, số mục tiêu lỗi, nhiều tab mục tiêu bị từ chối. Cột cuối được ghi rõ C-Level/mục tiêu và tính thống nhất (Sheet mẫu có công thức không đồng nhất ở dòng tổng và dòng con).
+Giữ thứ tự/hierarchy: tổng cộng, nhóm không có tracking, các dòng tracking phía dưới. Tổng cộng thực tế cộng mã đã có trong kế hoạch; unmatched được nêu riêng và vẫn có trong KPI toàn sự kiện. Tổng mục tiêu nguồn và cộng chi tiết lệch được giữ trong quality metadata/Excel; không hiện khối giải thích trên bảng theo yêu cầu giao diện mới nhất. Cập nhật registrations+plan cùng transaction/lock; fingerprint gồm cảplan nên sửa mục tiêu cũng tạo phiên. Nguồn lỗi giữ phiên trước. Nhập file không có kế hoạch giữ kế hoạch cũ của event với retained=true để đối soát; nguồn Google không còn tab mục tiêu trả no-plan. Sự kiện mới không có nguồn mục tiêu hiển thị empty state, không tạo số liệu giả.
+Không lọc trùng (mặc định) đếm mỗi dòng. Người dùng chọn phone hoặc email nếu cần, giữ dòng đầu trước lọc thời gian/nguồn. Phone chuẩn hóa +84/84/0084 số di động về0 để đối chiếu; dòng thiếu key được tính riêng. Danh sách dữ liệu vẫn giữ tất cả dòng nhập, không xóa dữ liệu do quy tắc báo cáo.
+Phone/MST lưuchuỗi: phone di động9số bắt đầu3/5/7/8/9 hoặc cố định10số bắt đầu2 được thêm0; số quốc tế khác giữ nguyên. MST9số hoặc9-3/12số thêm0; độ dài hợp lệ10/13 giữ nguyên. Giữ identifier_original cho giá trị lúc nhập. Không đoán số thiếu nhiều chữ số/scientific notation; giá trị mơ hồ giữ nguyên. GET rows chuẩn hóa legacy khi hiển thị, không sửa snapshot cũ.

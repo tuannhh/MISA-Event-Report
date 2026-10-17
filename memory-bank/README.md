@@ -1,6 +1,6 @@
 # Memory Bank — MISA Event Report
 
-Cập nhật: 16/10/2026, UTC+7. Package 1.0.0, schema v3. Đây là tri thức dự án đối chiếu với source, không chứa dữ liệu vận hành hoặc secrets.
+Cập nhật: 17/10/2026, UTC+7. Package 1.0.0, schema v4. Đây là tri thức dự án đối chiếu với source, không chứa dữ liệu vận hành hoặc secrets.
 
 Áp dụng cấu trúc 01–11 của [MISA Backend Standard, commit a940384](https://github.com/tuannhh/misa-backend-standard/tree/a940384030f86224a8775b82c4f72ee592104800/references/21-memory-bank-template), bổ sung active context để giữ các yêu cầu chưa triển khai. Các thay đổi tiếp nối về báo cáo và URL đã cập nhật trong tài liệu. Việc chuẩn hóa tài liệu không đồng nghĩa code đã tuân thủ toàn bộ standard.
 
