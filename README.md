@@ -6,7 +6,7 @@
 
 - Đăng nhập tại `/log-in`, thành công mở `/su-kien` để người dùng chọn sự kiện; không tự mở sự kiện đầu tiên. Danh sách có tìm kiếm, lọc Được chỉnh sửa/Chỉ xem và quyền riêng từng sự kiện. Tài khoản mới phải đổi mật khẩu tại `/change-password` trước khi vào danh sách.
 - Mỗi sự kiện có URL ổn định `/ten-su-kien-123abc/tong-quan`, `/thanh-vien`, `/du-lieu`, `/nguon-du-lieu`, `/muc-tieu`, `/nhat-ky`.
-- Nhập Excel/CSV hoặc Google Sheet và tự tổng hợp ngay khi nhận diện đủ cột; chỉ cần ghép cột khi chưa xác định được trường bắt buộc. Snapshot cũ giữ nguyên. Mặc định xem toàn bộ dữ liệu mới nhất, nhận xét Gemini tự tạo; có bộ lọc thời gian, nguồn và nhân viên. Sheet bật đồng bộ được kiểm tra khi mở/quay lại tab và mỗi phút đang xem; timer nền vẫn mỗi 5 phút.
+- Nhập Excel/CSV hoặc Google Sheet và tự tổng hợp ngay khi nhận diện đủ cột; chỉ cần ghép cột khi chưa xác định được trường bắt buộc. Snapshot cũ giữ nguyên. Mặc định xem toàn bộ dữ liệu mới nhất; có bộ lọc thời gian, nguồn và nhân viên. Sheet bật đồng bộ được kiểm tra khi mở/quay lại tab và mỗi phút đang xem; timer nền vẫn mỗi 5 phút.
 - Chọn nguồn khách tự cập nhật KPI, bảng, biểu đồ, so sánh và Excel. Các chiều nguồn được phát hiện từ header, có thể chỉnh trước khi import. Nhiều điều kiện kết hợp AND.
 - Toolbar báo cáo gọn: bộ lọc, hiển thị %, thông tin dữ liệu và cập nhật ngay. Không còn nút xuất Excel/ảnh trên giao diện. Ô “Tỷ lệ C-Level” dùng số đăng ký C-Level / tổng mục tiêu.
 - Tự nhận diện Sheet Mục tiêu trong nguồn Google Sheet/Excel, lưu kế hoạch cùng phiên dữ liệu và tính lại kết quả theo đăng ký mới. Tab Chi tiết mục tiêu hiển thị trực tiếp bảng, không cần nhập mục tiêu tracking thủ công.

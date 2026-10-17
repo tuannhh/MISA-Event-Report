@@ -63,3 +63,17 @@ test('source chart defaults to UTM campaign and keeps a deliberate dimension sel
  assert.equal(store.reports.some(r=>r.value==='targets'),false);
  s.event=null;
 });
+
+
+test('loading a dashboard no longer requests Gemini commentary',async()=>{
+ s.event=structuredClone(event);s.route='tong-quan';const urls=[];
+ globalThis.fetch=async url=>{urls.push(url);return response(report());};
+ await loadReport();await new Promise(resolve=>setTimeout(resolve,700));
+ assert.equal(urls.some(url=>url.includes('/insights')),false);s.event=null;
+});
+
+test('single member form submits only name and email, using server Editor default',async()=>{
+ s.event=structuredClone(event);s.member={name:'Test member',email:'test@misa.com.vn',role:'admin'};let sent;
+ globalThis.fetch=async(url,options)=>{if(options.method==='POST'){sent=JSON.parse(options.body);return response({ok:true});}return response([]);};
+ await store.addMember();assert.deepEqual(sent,{name:'Test member',email:'test@misa.com.vn'});s.event=null;
+});

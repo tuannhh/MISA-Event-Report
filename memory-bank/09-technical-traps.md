@@ -59,3 +59,5 @@ MUpload: inputRef.click() nổi lên label @click.prevent sẽ bị hủy defaul
 - Với hybrid, filter Online/Offline phải bao gồm both giống KPI; nếu dùng phép bằng tuyệt đối sẽ làm tổng sau lọc khác số thẻ.
 
 17/10/2026: normalize tiêu đề phải xử lý cả Đ/đ và xuống dòng. .gitignore có *.sql nên cần ngoại lệ !server/migrations/*.sql cho delta v4. Không gửi dữ liệu mục tiêu nhân viên qua AI diễn giải. Sheet mẫu có tổng mục tiêu khác tổng chi tiết và các công thức tỷ lệ không nhất quán; không suy diễn/bù mục tiêu, hiển thị chênh lệch và ghi rõ mẫu số trongapp.
+
+17/10/2026: File mẫu xuất từ artifact-tool dùng tiền tố OOXML x: khiến ExcelJS phiên bản hiện tại lỗi workbook.sheets. Chuẩn hóa tiền tố x: sang default namespace (giữ nguyên URI) trong XML của XLSX đã khắc phục. Regression phải đọc chính frontend/assets/member-template.xlsx rồi thêm dữ liệu và đi qua member import, không chỉ tạo workbook thay thế trong test.

@@ -12,7 +12,7 @@ Còn hardening backend: config JSON theo môi trường, tách thêm routes/serv
 
 Quy tắc giữ nguyên: đếm mỗi dòng, C-Level CEO/Giám đốc + Chủ doanh nghiệp, lọc ngày submit UTC+7, cấu hình riêng event. KPI Tỷ lệ C-Level dùng C-Level / mục tiêu theo yêu cầu mới 17/10; clevel_share vẫn C-Level / đăng ký. Chênh lệch mục tiêu tổng/chi tiết vẫn lưu trong dữ liệu chất lượng và bản Excel; theo yêu cầu mới nhất không hiển thị khối giải thích/cảnh báo trên bảng mục tiêu. Hình thức không rõ là unknown, không đoán từ event.mode.
 
-Yêu cầu mới nhất: nhập dữ liệu hợp lệ phải tự tổng hợp ngay và mở báo cáo toàn bộ active snapshot; filter ngày/nguồn/nhân viên là tùy chọn. Đã triển khai automatic import, pending recovery khi chưa có snapshot, source refresh khi mở/focus/60s, nhận xét AI tự động có cache/stale guard, lọc nhân viên và timestamp/warning. Sheet cũ bổ sung cột nhân viên ở lần sync kế; file cũ phải nhập lại nếu snapshot không lưu cột đó. Không đổi schema hay mục tiêu/KPI riêng đã chốt. Không tuyên bố native production compliance: vẫn cần host/thiết bị thật như mục trước.
+Yêu cầu mới nhất: nhập dữ liệu hợp lệ phải tự tổng hợp ngay và mở báo cáo toàn bộ active snapshot; filter ngày/nguồn/nhân viên là tùy chọn. Đã triển khai automatic import, pending recovery khi chưa có snapshot, source refresh khi mở/focus/60s, không còn tự gọi/hiển thị nhận xét AI theo yêu cầu UI mới, lọc nhân viên và timestamp/warning. Sheet cũ bổ sung cột nhân viên ở lần sync kế; file cũ phải nhập lại nếu snapshot không lưu cột đó. Không đổi schema hay mục tiêu/KPI riêng đã chốt. Không tuyên bố native production compliance: vẫn cần host/thiết bị thật như mục trước.
 
 Thay đổi tiếp theo 17/10/2026: đã triển khai 7 điều chỉnh dashboard/header. Chủ dự án chốt tỷ lệ gọi = đã gọi/tổng đăng ký, đường xu hướng nối số khách từng ngày (cùng trục với cột). Chỉ hybrid hiện hai ô Online/Offline. Module Mục tiêu & tracking đã bỏ khỏi dashboard; cấu hình mục tiêu và API legacy còn giữ. Xem mục mới trong 03–06 và VERIFICATION cho kiểm chứng; giới hạn native host/thiết bị thật vẫn còn.
 
@@ -26,3 +26,6 @@ Giữ tab Chi tiết mục tiêu và bảng phân trang20/50/100. Bỏ tiêu đ�
 
 ## Yêu cầu UI mới nhất — toolbar báo cáo
 Đã bỏ hai nút Xuất ảnh/Xuất Excel trên desktop và mobile theo yêu cầu chủ dự án. Không khôi phục nút từ mô tả cũ về xuất báo cáo. API/helper legacy còn giữ cho tương thích. Các điều khiển bộ lọc, %, thông tin dữ liệu, cập nhật được gom lên trên; bỏ hàng Toàn bộ dữ liệu mới nhất. Tabs và lựa chọn báo cáo cùng hàng khi desktop đủ rộng. Hai panel mở khi bấm nút, tự đóng khi đổi sự kiện; KPI/số liệu/auto sync không đổi.
+
+## Hoàn tất tiếp nối — chart và Thành viên (17/10/2026)
+Donut lớn hơn và responsive, số/chữ legend đặt gần nhau. Bỏ event name/latest timestamp lặp dưới tabs và ô nhận xét Gemini; loadReport không còn tạo request insights. Gemini nhận diện header/Sheet Mục tiêu vẫn giữ. Thành viên có form name/email mặc định Editor và mẫu Excel STT/Họ và tên/Email. 38/38 tests QA đạt, đã kiểm tra file mẫu thật qua importer; Docker build và desktop/mobile390px xác nhận. Không đổi schema, volume, dữ liệu hoặc quyền người dùng hiện hữu.

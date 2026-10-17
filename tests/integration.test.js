@@ -1,3 +1,4 @@
+import {readFile} from 'node:fs/promises';
 import test from 'node:test';import assert from 'node:assert/strict';import {randomBytes} from 'node:crypto';import ExcelJS from 'exceljs';
 const origin=process.env.BASE_URL;
 test('roles, forced password, membership Excel, tenant grants, snapshots, modes and exports',{skip:!origin},async()=>{
@@ -28,10 +29,11 @@ test('roles, forced password, membership Excel, tenant grants, snapshots, modes 
  await req(A+'/audit',{cookie:viewer,status:403});
  await req(A+'/settings',{method:'PUT',body:settings,cookie:viewer,status:403});await post('/api/events',{name:'Forbidden'},{cookie:viewer,status:403});
  await post(A+'/members',{name:'Bad',email:'bad@misa.com.vn.evil.test'},{status:400});
+ await post(A+'/members',{name:'Default Editor',email:`default-${suffix}@misa.com.vn`},{status:201});assert.equal((await req(A+'/members')).data.find(m=>m.email===`default-${suffix}@misa.com.vn`).role,'editor');
  await post(A+'/members',{name:'Admin',email:`admin-${suffix}@unit.misa.com.vn`,role:'admin'},{status:201});
  let admin=(await post('/api/login',{email:`admin-${suffix}@unit.misa.com.vn`,password:process.env.TEST_MEMBER_PASSWORD},{cookie:''})).cookie;admin=(await post('/api/password',{current:process.env.TEST_MEMBER_PASSWORD,password:'Admin-New-2026!'},{cookie:admin})).cookie;
  await post(A+'/members',{name:'Escalation',email:`bad-${suffix}@misa.com.vn`,role:'admin'},{cookie:admin,status:403});
- const wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('Members');ws.addRow(['Họ và tên','Email']);ws.addRow(['Editor',`editor-${suffix}@misa.com.vn`]);ws.addRow(['Existing Viewer',`viewer-${suffix}@misa.com.vn`]);const form=new FormData();form.append('file',new Blob([await wb.xlsx.writeBuffer()]),'members.xlsx');
+ const wb=new ExcelJS.Workbook();await wb.xlsx.load(await readFile(new URL('../frontend/assets/member-template.xlsx',import.meta.url)));const ws=wb.worksheets[0];assert.deepEqual(ws.getRow(1).values.slice(1),['STT','Họ và tên','Email']);ws.getRow(2).values=[1,'Editor',`editor-${suffix}@misa.com.vn`];ws.getRow(3).values=[2,'Existing Viewer',`viewer-${suffix}@misa.com.vn`];const form=new FormData();form.append('file',new Blob([await wb.xlsx.writeBuffer()]),'members.xlsx');
  const preview=(await post(A+'/members/import/preview',form,{cookie:admin})).data;assert.equal(preview.errors.length,0);assert.equal(preview.rows.length,2);await post(A+'/members/import',{rows:preview.rows},{cookie:admin});await post(B+'/members/import',{rows:preview.rows});
  await post('/api/login',{email:`viewer-${suffix}@misa.com.vn`,password:'Viewer-New-2026!'},{cookie:''});
  let editor=(await post('/api/login',{email:`editor-${suffix}@misa.com.vn`,password:process.env.TEST_MEMBER_PASSWORD},{cookie:''})).cookie;editor=(await post('/api/password',{current:process.env.TEST_MEMBER_PASSWORD,password:'Editor-New-2026!'},{cookie:editor})).cookie;

@@ -4,7 +4,7 @@ Vite build `frontend/` → `dist/`, Express phục vụ dist. Source vanilla `pu
 
 `App.vue`: auth/force-password, dialog, chọn surface theo container <=1024px hoặc query surface=mobile; không suy luận quyền thành surface. `DesktopPage.vue` theo Dashboard/List/Form templates có MHeaderBar48/MSidebar200/64. `MobilePage.vue` là cây page riêng với MMobileTopBar56, bottom nav5, member/data dạng card list, không dựng desktop header/sidebar. Hai page chia sẻ store, control/form fields và từng chart; không reuse desktop page làm mobile.
 
-`store.js`: API/auth/event/route state, load report sequence chống response cũ ghi đè; source/date/mode watch tự gọi report. Khi chờ ẩn số liệu cũ và disable exports. Chọn nguồn tác động current/comparison/Excel/AI. Excel pin snapshot đang xem. ReportStamp ghi tên sự kiện và bộ lọc trên PNG. Snapshot cũ chọn từ MCombobox. Số vi-VN; MDatePicker dd/MM/yyyy; ISO chỉ dùng API. Ô numeric mục tiêu hiển thị vi-VN qua NumberField.
+`store.js`: API/auth/event/route state, load report sequence chống response cũ ghi đè; source/date/mode watch tự gọi report. Khi chờ ẩn số liệu cũ và disable exports. Chọn nguồn tác động current/comparison/Excel/AI. Excel pin snapshot đang xem. ReportStamp chỉ hiện thông tin dữ liệu khi mở, bộ lọc đang áp dụng hoặc cảnh báo nguồn. Snapshot cũ chọn từ MCombobox. Số vi-VN; MDatePicker dd/MM/yyyy; ISO chỉ dùng API. Ô numeric mục tiêu hiển thị vi-VN qua NumberField.
 
 Route slug/history cho 6 trang; refresh/deep link vẫn đi qua login/force password/RBAC. Role action ẩn ở UI và kiểm tra lại backend. Source discovery/mapping preview vẫn giữ trước commit; member import preview riêng không tạo lead. Appearance dùng MSettingsDialog theme/header/density; user account đổi mật khẩu/logout. Không lưu lead/password vào localStorage. Form state nằm store nên giữ khi đổi viewport; reload có thể mất draft chưa lưu.
 
@@ -16,7 +16,7 @@ Phạm vi bằng chứng: Docker build + desktop và mobile browser. Chưa có h
 
 ## 17/10/2026 — Tự tổng hợp
 
-Store gửi automatic khi chọn nguồn; import thành công reset date/source/mode/snapshot về toàn bộ mới nhất và mở Tổng quan. Sự kiện chưa có snapshot lấy pending thuộc user để hoàn tất hoặc dẫn về ghép cột. ReportStamp hiển thị thời điểm tổng hợp, kiểm tra nguồn, lỗi sync và nút cập nhật; frontend refresh khi mở/focus/visible và mỗi 60 giây, giữ filter người dùng. Chọn lịch sử dừng auto refresh. InsightPanel dùng chung control trong hai composition, tự gọi AI sau khi số liệu hiện, pin snapshot, cache và loại phản hồi lỗi thời. AI lỗi có notice riêng, KPI không phụ thuộc AI. Filter nhân viên dùng các chiều source_details thực có.
+Store gửi automatic khi chọn nguồn; import thành công reset date/source/mode/snapshot về toàn bộ mới nhất và mở Tổng quan. Sự kiện chưa có snapshot lấy pending thuộc user để hoàn tất hoặc dẫn về ghép cột. ReportStamp hiển thị thời điểm tổng hợp, kiểm tra nguồn, lỗi sync và nút cập nhật; frontend refresh khi mở/focus/visible và mỗi 60 giây, giữ filter người dùng. Chọn lịch sử dừng auto refresh. Theo yêu cầu UI tiếp nối, đã bỏ InsightPanel ở cả hai composition và ngừng tự gọi nhận xét; KPI không phụ thuộc AI. Filter nhân viên dùng các chiều source_details thực có.
 
 MUpload bổ sung @click.stop trên input file để sự kiện không nổi lên label @click.prevent làm hủy file picker; label có role/button và keyboard Enter/Space. Đã kiểm tra chọn CSV thật trong QA.
 
@@ -35,3 +35,7 @@ Theo khung đỏ chủ dự án chỉ định: bỏ khối tiêu đề/mô tả/
 
 ## 17/10/2026 — thanh thao tác báo cáo gọn
 `ReportActions.vue` gom checkbox Hiển thị %, nút Bộ lọc báo cáo (kèm số điều kiện), Thông tin dữ liệu và Cập nhật ngay vào toolbar cùng hàng tiêu đề trên desktop. DesktopPage/MobilePage giữ trạng thái mở panel, reset khi đổi event; ReportFilters/ReportStamp nhận prop open. Filter panel không chiếm hàng khi đóng; bỏ dòng Toàn bộ dữ liệu mới nhất. Desktop gom tabs và lựa chọn báo cáo cùng hàng khi đủ rộng. Hai nút Xuất Excel/Xuất ảnh đã bỏ khỏi cả hai composition; API/helper xuất legacy vẫn giữ để tương thích, không có entry point trên UI. Quyền tạo/nhập dữ liệu và chế độ phiên lịch sử không thay đổi.
+
+## 17/10/2026 — chart lớn, dashboard và thành viên tối giản
+Donut dùng bán kính pixel theo chiều rộng thực nhận từ MChart resize, chừa chỗ nhãn phần trăm ngoài; chiều cao340px. Legend dùng inline flex có wrap, khoảng cách tên/số10px. ReportStamp bỏ tên sự kiện/dòng dữ liệu mới nhất; không render container rỗng ở mặc định. Thông tin thời điểm vẫn có trong panel mở bằng nút Thông tin dữ liệu; cảnh báo nguồn và lựa chọn lịch sử vẫn hiển thị khi cần.
+Navigation/title là Thành viên. Form thêm chỉ Họ và tên, Email; store bỏ role khỏi payload để dùng default Editor. MemberImport bỏ văn bản giải thích dài, thêm link tải file mẫu XLSX đóng gói bằng Vite ?url. Mẫu không chứa tài khoản mẫu, chỉ ba cột STT/Họ và tên/Email và dòng trống. API quản trị quyền thành viên hiện có không đổi.

@@ -54,3 +54,6 @@ Theo khung đỏ chủ dự án chỉ định: bỏ khối tiêu đề/mô tả/
 
 ## 17/10/2026 — tối ưu vùng trên dashboard
 Theo ảnh chú thích mới: bỏ cả nút xuất ảnh và Excel; gom bộ lọc, hiển thị %, thông tin dữ liệu, cập nhật ngay vào hàng thao tác trên. Loại dòng mô tả toàn bộ dữ liệu mới nhất, gộp tabs/lựa chọn báo cáo trên desktop để đưa KPI lên sớm. Không đổi phép tính hoặc dữ liệu.
+
+## 17/10/2026 — chart và thành viên tối giản
+Theo phản hồi ảnh: tăng donut, đưa số/% sát tên legend, bỏ tên sự kiện/timestamp lặp và nhận xét Gemini trên cả desktop/mobile. Ngừng request nhận xét tự động. Đổi nhãn Thành viên; form chỉ name/email mặc định Editor, thêm Excel mẫu ba cột STT/Họ và tên/Email. Kiểm chứng 38 tests QA, file mẫu qua importer, UI desktop/mobile; không thay schema hay dữ liệu đang phục vụ.

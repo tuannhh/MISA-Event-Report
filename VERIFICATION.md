@@ -65,3 +65,9 @@ Gemini đã tự tạo nhận xét trên local, KPI không chờ AI. Nguồn She
 - Actual local desktop1440×1000: one57px toolbar holds report controls and create/import actions; first KPI row begins at226.5px. Tabs and report selections share a row. Removed Excel/image buttons and the standalone default-filter summary.
 - Browser verified filter/metadata toggles, percent toggle via its visible label, and target tab hiding percent control. Mobile390×844: root width390, no overflow, both panels toggle, zero export buttons. Viewport reset afterward.
 - Screenshot outside Git: ../.misa-event-report-local/report-toolbar-20261017.jpg. Native MISA AMIS runtime acceptance remains unverified.
+
+## 17/10/2026 — chart and member simplification
+- Production Vite build passed (index-BKqhLHW6.js). Isolated QA:38/38 tests passed, zero skipped. Added coverage: no automatic insights request; single-member payload omits role and API defaults to Editor; actual shipped XLSX template loaded, populated and imported successfully.
+- Template headers exactly STT/Họ và tên/Email, no sample accounts. Artifact-tool preview inspected; OOXML namespace compatibility fixed for ExcelJS. Served localhost asset bytes match the tested source workbook.
+- Desktop1440×1000: donut full outside labels, compact name/value legend, KPI starts171px; no repeated event/latest row or Gemini panel. Add-member dialog has exactly name/email, no role radio. Mobile390×844: full donut labels and wrapped legend, root scrollWidth390. Native host acceptance remains unverified.
+- Evidence outside Git: ../.misa-event-report-local/dashboard-member-polish-20261017.jpg and dashboard-member-mobile-20261017.jpg. Original Docker project/database volume retained; no production test records created.
