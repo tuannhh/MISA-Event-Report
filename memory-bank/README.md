@@ -22,3 +22,5 @@ Trước khi code, đọc 11 và 12. Lần đầu tiếp nhận đọc tuần t�
 | [12-active-context.md](12-active-context.md) | Yêu cầu tiếp theo, khoảng trống, thứ tự thực hiện |
 
 Nguồn xác thực: `server/`, `frontend/`, `tests/`, `compose.yaml`, `Dockerfile`, yêu cầu trực tiếp của chủ dự án. [VERIFICATION.md](../VERIFICATION.md) ghi kiểm tra theo phiên bản và giới hạn bằng chứng.
+
+Cập nhật18/10/2026: schema v5 với nguồn độc lập Online/Offline, hồ sơ khách bền vững, lịch sử liên hệ và phân công. Đọc mục mới nhất của03–06/08–09/12; các default1350/C-Level trong lịch sử không áp dụng cho sự kiện mới.

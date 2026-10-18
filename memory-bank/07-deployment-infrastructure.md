@@ -81,3 +81,6 @@ Service ingress all + Run Invoker allUsers theo yêu cầu; auth ứng dụng gi
 Dữ liệu chuyển:1event/1user/4snapshots/134active rows/31goal rows/target1350. Không chuyển sessions/invitations. Super admin cloud được cấp mật khẩu ngẫu nhiên mới và must_change_password=true; local giữ nguyên. Dump/credentials 0600 ngoài Git. Runtime credentials không nằm trong memory bank.
 
 Build context được giới hạn source qua .dockerignore và .gcloudignore. Runbook cập nhật secret names/version, public-access switch, backup/PITR và rollback. Chưa có load test hay chứng nhận native/production toàn diện.
+
+## 18/10/2026 — chuyển sang registry v5
+Cutover dùng trang bảo trì không kết nối DB và pause Scheduler; chờ hết timeout300s của request cũ trước khởi động writer v5. Backup trước nâng cấp1792314455030 SUCCESSFUL. Chạy migration/backfill tự động trên service, sau đó cập nhật job cùng digest và resume lịch. Database cloud/local độc lập, không restore local đè cloud. Không đổi secrets/password/IP policy. Bản build cuối dùng runtime+frontend bất biến của commit06baebc và COPY toàn bộ server từ commit086d7bf; package/lockfile không đổi. Digest/revision kết quả ở VERIFICATION.

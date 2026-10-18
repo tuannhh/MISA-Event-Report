@@ -94,3 +94,15 @@ Gemini đã tự tạo nhận xét trên local, KPI không chờ AI. Nguồn She
 - Hai nguồn24/10 nhập qua API QA:87lượt(79Online,3Offline,5Chưa xác định),4dòng đối chiếu; nhập lại cả hai nguồn vẫn87/4. Không suy đoán mục tiêu/C-Level; ngày thiếu vẫn null. Đây là số ở thời điểm QA, rollout sẽ đối chiếu lại nguồn thật.
 - Browser QA: desktop1280, mobile390 và320; tab kênh, lọc, thêm khách, contact sheet/lịch sử, giấy phản hồi và trạng thái lưu thành công.320px không còn nút nhập/thêm tràn ngang. Native host/thiết bị thật chưa nghiệm thu.
 - Cloud SQL backup trước nâng cấp:1792314455030 SUCCESSFUL; dump riêng ngoài Git, không đưa dữ liệu/tài khoản vào image.
+
+Các regression cuối: khách đã mời cũng theo mode/ngày/nguồn; nhận lại hồ sơ dùng thông tin liên hệ đã được người dùng sửa;5tests registry đạt. UI desktop hybrid dùng5KPI chính và2ô kênh cân đối, đã xem screenshot1440px. Không đổi dữ liệu thật để kiểm thử các thao tác contact.
+
+### Rollout cloud/local đã hoàn tất —18/10/2026
+- Mã ứng dụng086d7bf; build cuối807ce969-da22-48ed-95d5-10eaa18e0bd6 SUCCESS. Image `asia-southeast1-docker.pkg.dev/prapplication-479309/cloud-run-source-deploy/misa-event-report@sha256:c8b699bd8982a3630a4ac041b64d4c22990c47498aadcb6943ec1d4a5dbf565f`. Dùng frontend/runtime của06baebc (build a9ee8081-0d91-4f4e-8366-cf2081dee763), COPY toàn bộ backend086d7bf; chỉ22file mã được gửi ở bước cuối, không private data.
+- Maintenance00003-9pg từ09:24:45UTC; chờ trên300s rồi bật v5. Revision `misa-event-report-00004-bv7` nhận100%traffic. Schema5. Health200, login200, API events chưa đăng nhập401; browser xác nhận trang login. Không reset mật khẩu thật để kiểm thử.
+- Sự kiện28/10:134đăng ký,119đã gọi,84C-Level,target1350,0conflict.4snapshot cũ checksum giữ nguyên; credential/forced-password flags của2tài khoản không đổi.
+- Dùng event24/10 đã tồn tại: nguồn Excel72dòng (71thêm,1đối chiếu), HCSN23dòng (16thêm,4cập nhật,3đối chiếu). Kết quả87lượt:79Online,3Offline,5unknown;4dòng chờ Admin đối chiếu chưa cộng KPI.16khách thiếu ngày, chức vụ/mục tiêu/C-Level chưa có thì để trống. Nguồn lead Online được xác minh từ PageUrl online trong toàn bộ72dòng. HCSN dùng hình thức từng dòng; thiếu giữ unknown.
+- Import thật qua cùng readFile/readSheet/normalizeData/upsertSource/mergeImport trong transaction event lock bằng operator script riêng ngoài Git, audit gắn chủ sự kiện; không sửa Sheet gốc. Sau import chạy sync HCSN và đối chiếu lại, tổng không tăng.
+- Cloud job `misa-event-report-sync-7vbxb` Completed True,12.76s, cùng digest. Hai nguồn Sheet bật đồng bộ không có lỗi. Scheduler resume5phút/lần.
+- Local8096 build086d7bf, healthy, giữ project/volume misa-event-insights và134khách/119đã gọi. Có backup local trước migration. Không chép database cloud đè local, dữ liệu24/10 được nhập ở cloud.
+- Chưa có ánh xạ tên/mã nhân viên sang tài khoản do chủ dự án xác nhận; Admin dùng Thiết lập → Phân công khách cho thành viên. Không tự đoán quyền từ tên NV. Native host/thiết bị thật và các khoảng trống vận hành đã ghi trước vẫn chưa nghiệm thu.

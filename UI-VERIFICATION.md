@@ -56,3 +56,5 @@ Final checks:320×568 filter sheet body scrolls, footer bottom568px and no panel
 
 ## 18/10/2026 — quy trình khách và liên hệ
 Đã kiểm tra browser QA riêng desktop1280/mobile390/320. Các tab Online/Offline/Chưa rõ nằm gọn; toolbar320 dùng hai nút cùng hàng; form liên hệ mở bottom sheet và lưu phản hồi giấy thành công, lịch sử có người/thời điểm. Dashboard theo kênh, field mode/phòng/người phụ trách/phản hồi trong dữ liệu đăng ký. Không coi browser viewport là chứng nhận native host MISA AMIS; vẫn cần thiết bị thật.
+
+Desktop1440px: sau kiểm tra ảnh, tách5KPI chính và2ô Online/Offline thành hàng cân đối, không còn1ô Offline lẻ dưới6ô. Đã xác minh lại screenshot.
