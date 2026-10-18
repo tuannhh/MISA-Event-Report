@@ -98,3 +98,5 @@ html,body,#app{height:100%;overflow:hidden}body{margin:0;font:13px/1.5 Inter,san
 .mds-mobile-app .registration-actions>div:first-child{max-width:none}
 .mds-mobile-app .registration-actions .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 .mds-mobile-app .registration-actions button{min-width:0}
+
+.desktop-kpis{grid-template-columns:repeat(10,minmax(0,1fr))}.desktop-kpis>.card{grid-column:span 2}.desktop-kpis>.kpi-online,.desktop-kpis>.kpi-offline{grid-column:span 5;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 12px}.desktop-kpis>.kpi-online .kpi-value,.desktop-kpis>.kpi-offline .kpi-value{grid-column:2;grid-row:1/3;margin:0}.desktop-kpis>.kpi-online .kpi-detail,.desktop-kpis>.kpi-offline .kpi-detail{grid-column:1}
