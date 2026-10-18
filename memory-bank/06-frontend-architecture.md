@@ -52,3 +52,7 @@ Store xóa bản nháp import, nguồn, bộ lọc và form khi đổi event; t�
 
 ## 18/10/2026 — quản trị toàn app và luồng dữ liệu
 Nhập & đồng bộ: tabs Nguồn dữ liệu/Cần đối chiếu, nút Thêm nguồn mở dialog desktop hoặc sheet mobile; chọn File/Google Sheet và nhóm, tùy chọn đọc nâng cao thu gọn. Candidate hiển thị mode, contact, công ty/phòng/email và mã hồ sơ rút gọn để phân biệt cả khi cùng mode. Bộ lọc desktop mặc định thu gọn; dùng chung RegistrationFilterFields với mobile sheet. Bảng đăng ký có độ rộng cột và thao tác Sửa thông tin/Liên hệ sticky bên phải. Nhật ký bỏ khỏi menu/route client, backend audit giữ. Viewer chỉ thấy Tổng quan; /thiet-lap-thanh-vien + AdminSettings dành Super, form name/email, danh sách và xác nhận thu hồi, paging20/50/100. Global Admin có nút tạo event. Không chứng nhận native host/device thật.
+
+
+## 18/10/2026 — toolbar đăng ký và mật khẩu ban đầu
+Dữ liệu đăng ký: Desktop gom Tạo sự kiện, Nhập khách, Thêm khách vào toolbar tiêu đề; bỏ hàng trạng thái riêng. Tình trạng đăng ký (Tất cả khách/Đã đăng ký/Đã mời) nằm trong bộ lọc chung desktop dialog và mobile sheet, vẫn tính badge/xóa lọc. Mobile giữ hai nút nhập/thêm cùng hàng, tab Online/Offline chỉ hiện cho hybrid.

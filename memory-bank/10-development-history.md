@@ -70,3 +70,7 @@ Triển khai schema v5, nguồn độc lập, persistent registry/human override
 
 ## 18/10/2026 — quản trị toàn app và luồng dữ liệu
 Theo yêu cầu chủ dự án, tách global Admin khỏi event Editor; Viewer chỉ xem overview. Thêm migration v6/API quản trị Super-only và chặn event role elevation. Làm gọn nhập/đồng bộ, ghi rõ mode khi đối chiếu, filter popup, sửa thông tin khách dễ thấy, ẩn audit UI. 44/44 tests QA đạt; browser xác nhận sửa công ty/phòng, form nguồn, trang Admin và filter mobile. Cloud/local rollout ghi trong VERIFICATION sau triển khai.
+
+
+## 18/10/2026 — toolbar đăng ký và mật khẩu ban đầu
+Thu gọn danh sách đăng ký theo ảnh người dùng: đưa trạng thái khách vào bộ lọc, gom action lên toolbar; mobile dùng cùng bộ lọc. Chuẩn bị đổi default credential ngoài Git cho account mới, giữ forced change và mật khẩu hiện hữu.44/44tests QA đạt với cấu hình mới; không migration/schema change.

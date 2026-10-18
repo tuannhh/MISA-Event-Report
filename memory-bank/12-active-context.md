@@ -49,3 +49,7 @@ Rollout hoàn tất18/10: local8096 và Cloud Run revision00004-bv7, ứng dụn
 Yêu cầu mới nhất đã code: Admin được tạo trong Thiết lập thành viên quản lý TOÀN BỘ sự kiện. Chỉ Super cấp/thu hồi global admin; event import chỉ Editor. Viewer chỉ thấy Tổng quan và bị chặn API chi tiết; Editor chỉ xem chi tiết event có membership, sửa khách theo phân công. Admin scoped cũ giữ nguyên. Nhật ký không còn trên UI. Nhập dữ liệu mở khi cần, nguồn/conflict tách tab, candidate có mode/mã hồ sơ; filter đăng ký desktop/mobile thu gọn và bảng có nút sửa thông tin rõ ràng. Không nhập lại nguồn thật, không reset password, không sửa kết quả liên hệ. Schema v6 và44tests QA; trạng thái rollout đọc VERIFICATION.
 
 Rollout v6 hoàn tất18/10: app6927de1 trên local8096 và Cloud Run00005-geq,100%traffic. Có Admin toàn app nhưng không tự cấp quyền cho tài khoản thật nào. Số liệu cloud giữ221hồ sơ/2contact logs/3pending conflicts; source errors0sau jobmới. Không nhập lại nguồn24/10. XemVERIFICATION cho backup/build/sync và giới hạn native host.
+
+
+## 18/10/2026 — toolbar đăng ký và mật khẩu ban đầu
+Yêu cầu mới18/10 đã code: bỏ dropdown Tất cả khách khỏi danh sách và chuyển vào bộ lọc desktop/mobile; Nhập khách/Thêm khách lên toolbar desktop. Mật khẩu mặc định tài khoản mới theo chủ dự án, chỉ cấu hình ngoài source; bắt buộc đổi lần đầu, không reset account hiện hữu. Kiểm thử44/44QA đạt. Trạng thái rollout đọc VERIFICATION; native host/thiết bị thật chưa nghiệm thu.

@@ -22,3 +22,7 @@ Chủ dự án yêu cầu truy cập cloud không giới hạn IP. Cloud Run ing
 ## 18/10/2026 — phân công và bảo vệ kết quả liên hệ
 Admin/Super admin quản lý toàn bộ; Editor chỉ sửa/thêm/import khách có mã staff_code (fallback utm_content/tracking) được Admin ánh xạ tới chính mình trong event. Mã không tự trở thành quyền từ email/tên đoán được. Truy vấn quyền kiểm tra active user và membership hiện tại, thu hồi membership có hiệu lực ngay. Import Editor kiểm tra cả mã đầu vào và các hồ sơ trùng ứng viên để ngăn đổi mã nhằm chiếm hồ sơ người khác. Chỉ Admin đổi mã phân công.
 Event lock tuần tự hóa sync/import/human edit; optimistic version chống ghi đè form cũ. Contact log và projection/audit cùng transaction. Lọc tenant ở hồ sơ, lịch sử, nguồn và đối chiếu. Sheet sync không thay human overrides. Vẫn còn các khoảng trống hardening legacy đã nêu trước; không tuyên bố tuân thủ toàn bộ standard.
+
+
+## 18/10/2026 — toolbar đăng ký và mật khẩu ban đầu
+Mật khẩu ban đầu cho thành viên và Admin mới dùng cùng DEFAULT_MEMBER_PASSWORD do chủ dự án chỉ định, cấu hình ngoài Git qua runtime.env/Secret Manager. Giá trị thay đổi18/10/2026 không được ghi vào tài liệu/mã nguồn. Tài khoản mới vẫn must_change_password=true; thêm lại tài khoản hiện có không reset mật khẩu hay cờ đổi lần đầu.
