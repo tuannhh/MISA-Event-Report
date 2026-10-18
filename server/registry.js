@@ -9,11 +9,12 @@ export const recordFingerprint=row=>fingerprint(Object.fromEntries(['name','phon
 const phone=row=>{const v=phoneText(row.phone);return /^0\d{9,10}$/.test(v)?v:'';};
 const email=row=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email||'')?norm(row.email):'';
 export function matchRegistration(row,records){
- const same=records.filter(r=>r.data.attendance_mode===row.attendance_mode);
+ const effective=r=>({...r.data,...r.overrides});
+ const same=records.filter(r=>effective(r).attendance_mode===row.attendance_mode);
  const p=phone(row),e=email(row);
- const candidates=same.filter(r=>p&&phone(r.data)===p||e&&email(r.data)===e);
+ const candidates=same.filter(r=>p&&phone(effective(r))===p||e&&email(effective(r))===e);
  if(candidates.length!==1)return {candidates,match:null};
- const candidate=candidates[0],old=candidate.data;
+ const candidate=candidates[0],old=effective(candidate);
  const conflict=(row.name&&old.name&&norm(row.name)!==norm(old.name))||(p&&phone(old)&&p!==phone(old))||(e&&email(old)&&e!==email(old));
  return {candidates,match:conflict?null:candidate};
 }

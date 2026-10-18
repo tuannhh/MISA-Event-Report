@@ -18,6 +18,7 @@ test('match only unambiguous identities within one participation mode; keep prio
  assert.equal(matchRegistration({...old.data,phone:'912345678'},[old]).match.id,'1');
  assert.equal(matchRegistration({...old.data,name:'Binh'},[old]).match,null);
  assert.equal(matchRegistration({...old.data,attendance_mode:'offline'},[old]).candidates.length,0);
+ const corrected={...old,overrides:{phone:'0988887777',attendance_mode:'offline'}};assert.equal(matchRegistration({...old.data,phone:'0988887777',attendance_mode:'offline'},[corrected]).match.id,'1');
  assert.equal(matchRegistration({...old.data},[old,{...old,id:'2'}]).match,null);
  assert.equal(mergeNonempty(old.data,{company:'',call_status:'not_called'}).company,'A');assert.equal(mergeNonempty(old.data,{call_status:'unknown'}).call_status,'called');
  const rows=participationRows([{...old.data,attendance_mode:'both'}],'auto','hybrid','registered');assert.equal(rows.length,2);assert.equal(summarize(rows,{...defaultSettings(),dedup:'phone'}).total,2);
