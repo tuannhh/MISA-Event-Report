@@ -55,6 +55,7 @@ test('roles, forced password, membership Excel, tenant grants, snapshots, modes 
  const comparison=(await req(A+'/report?from=2026-10-14&to=2026-10-14&compareFrom=2026-10-15&compareTo=2026-10-15')).data;assert.equal(comparison.current.total,1);assert.equal(comparison.comparison.total,3);
  await req(B+'/report?snapshot='+snapshot,{status:404});await req(A+'/report?sourceFilters=%7Bbad',{status:400});
  const exported=await fetch(origin+A+'/export.xlsx?mode=online',{headers:{Cookie:editor}});assert.equal(exported.status,200);const book=new ExcelJS.Workbook();await book.xlsx.load(Buffer.from(await exported.arrayBuffer()));assert.equal(book.getWorksheet('Hình thức').getCell('B2').value,2);
+ assert.ok((await req(A+'/rows',{cookie:admin})).data.rows.every(r=>r.can_edit));
  const registrations=(await req(A+'/rows')).data.rows;const an=registrations.find(r=>r.name==='An');assert.equal(an.call_status,'called');assert.equal(an.utm_content,'a');
  const row=registrations.find(r=>r.name==='Binh'),editorMember=(await req(A+'/members')).data.find(m=>m.email===`editor-${suffix}@misa.com.vn`);
  await req(A+'/assignments',{method:'PUT',body:{assignments:[]}});
@@ -62,11 +63,13 @@ test('roles, forced password, membership Excel, tenant grants, snapshots, modes 
  await req(A+'/assignments',{method:'PUT',body:{assignments:[{code:'b',user_id:editorMember.id}]}});
  await post(A+'/rows/'+row.id+'/contacts',{version:row.version,channel:'paper',called:true,response:'confirmed'},{cookie:editor,status:400});
  await post(A+'/rows/'+row.id+'/contacts',{version:row.version,channel:'phone',called:true,response:'confirmed'},{cookie:editor});
+ const editedRow=(await req(A+'/rows',{cookie:editor})).data.rows.find(r=>r.id===row.id);await req(A+'/rows/'+row.id,{method:'PATCH',cookie:editor,body:{version:editedRow.version,row:{company:'Company edited',position:'IT',department:'Sales',staff_code:'',utm_content:'b'}}});assert.equal((await req(A+'/rows')).data.rows.find(r=>r.id===row.id).company,'Company edited');
  assert.equal((await req(A+'/report')).data.current.call_rate,80);assert.equal((await req(A+'/report?snapshot='+snapshot)).data.current.call_rate,60);
  const member=(await req(A+'/members')).data.find(m=>m.email===`editor-${suffix}@misa.com.vn`);await req(A+'/members/'+member.id,{method:'DELETE',cookie:admin});await req(A+'/settings',{method:'PUT',body:settings,cookie:editor,status:403});await req(B+'/settings',{method:'PUT',body:settings,cookie:editor});const rights=(await req('/api/events',{cookie:editor})).data;assert.equal(rights.find(e=>e.id===a.id).role,'viewer');assert.equal(rights.find(e=>e.id===b.id).role,'editor');
  await req(A+'/members/'+viewerId,{method:'PATCH',body:{role:'admin'},status:403});
  const createdByAdmin=(await post('/api/events',{name:'Admin created '+suffix,mode:'offline'},{cookie:admin,status:201})).data;
  assert.equal((await req('/api/events/'+createdByAdmin.id,{cookie:admin})).data.role,'admin');
+ await post('/api/events/'+createdByAdmin.id+'/rows',{name:'Global admin guest',attendance_mode:'offline'},{cookie:admin,status:201});assert.equal((await req('/api/events/'+createdByAdmin.id+'/rows',{cookie:admin})).data.rows[0].can_edit,true);
  await post(B+'/members',{name:'Admin',email:`admin-${suffix}@unit.misa.com.vn`},{status:201});
  await req('/api/admins/'+globalAdmin.id,{method:'DELETE'});
  await req(A+'/rows',{cookie:admin,status:403});await req(A+'/report',{cookie:admin});

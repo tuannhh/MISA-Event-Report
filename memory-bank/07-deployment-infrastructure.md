@@ -84,3 +84,6 @@ Build context được giới hạn source qua .dockerignore và .gcloudignore. 
 
 ## 18/10/2026 — chuyển sang registry v5
 Cutover dùng trang bảo trì không kết nối DB và pause Scheduler; chờ hết timeout300s của request cũ trước khởi động writer v5. Backup trước nâng cấp1792314455030 SUCCESSFUL. Chạy migration/backfill tự động trên service, sau đó cập nhật job cùng digest và resume lịch. Database cloud/local độc lập, không restore local đè cloud. Không đổi secrets/password/IP policy. Bản build cuối dùng runtime+frontend bất biến của commit06baebc và COPY toàn bộ server từ commit086d7bf; package/lockfile không đổi. Digest/revision kết quả ở VERIFICATION.
+
+## 18/10/2026 — v6 global Admin
+Local8096 và Cloud Run revision00005-geq đã chạy app6927de1/schema6;100%traffic. Cloud Build c2c68c1a-57ee-47f5-9720-26e363a67969; digest sha256:0e219d71246e8eb15e218d67bf611130380d00c41487f466f090b5d62819eff0. Managed SQL backup1792319172453 thành công; không tải cloud dump về máy. Sync job cùng image, executionzvkbz thành công; SchedulerENABLED. Không đổi secrets, mật khẩu, public ingress hay volume. Chi tiết đối chiếu ở VERIFICATION; rollback tránh v5 vì không hiểu global admin và còn cho Viewer đọc chi tiết.

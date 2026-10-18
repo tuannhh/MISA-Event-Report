@@ -111,4 +111,12 @@ Các regression cuối: khách đã mời cũng theo mode/ngày/nguồn; nhận 
 - QA riêng8097, database events_test/tmpfs:44/44 tests, không skip; Vite/Docker build thành công. Integration kiểm tra Viewer403ở rows/contacts/sources/members/imports/conflicts/assignments/audit/export; aggregate report200. Global admin quản lý sự kiện mới/cũ, chỉ Super cấp/thu hồi, thu hồi hiệu lực ngay, giữ editor membership/password, chặn nâng quyền qua event member API.
 - Browser desktop: bộ lọc mở/đóng; sửa công ty và phòng ban của khách QA lưu được; Import mở dialog, chuyển File/Google Sheet; Admin list tải từ menu lẫn reload, form2trường. Mobile390px: form lọc sheet/footer hoạt động; danh sách Admin thành cards.
 - Cloud baseline trước rollout: schema5,2users,221registrations,2contact logs,3pending conflicts; hai active snapshots134/87rows,119/0called. Đây là số đối chiếu tại thời điểm kiểm tra, không phải dữ liệu cố định.
-- Chưa kiểm nghiệm trên native host/thiết bị thật. Không claim full compliance. Rollout cloud/local sẽ bổ sung sau khi xác nhận.
+- Chưa kiểm nghiệm trên native host/thiết bị thật. Không claim full compliance. Rollout cloud/local đã hoàn tất như dưới đây.
+
+### Rollout xác nhận — v6
+- App commit6927de1; Cloud Build c2c68c1a-57ee-47f5-9720-26e363a67969 SUCCESS, digest sha256:0e219d71246e8eb15e218d67bf611130380d00c41487f466f090b5d62819eff0.
+- Cloud Run misa-event-report-00005-geq nhận100% traffic sau kiểm tra revision0%: health200, login200, admins chưa đăng nhập401; HTML trang chính trùng revision đã kiểm tra. Tag verify-v6 đã bỏ sau kiểm chứng. Không đổi ingress/origin/secrets/password.
+- Cloud SQL backup managed1792319172453 SUCCESSFUL. Không tải dump cloud về local: automatic review chặn thao tác đó; sử dụng backup trong Cloud SQL. Schema6,2users,221registrations,2contact logs,3pending conflicts khớp baseline; active event28/10:134rows/119called;24/10:87rows/0called. Sau sync vẫn khớp, source errors0.
+- Job cùng digest: misa-event-report-sync-zvkbz Completed=True. Scheduler giữ ENABLED, mỗi5phút.
+- Local8096 cùng source/dist, schema6,134registrations/1user; giữ Docker project misa-event-insights/volumeevent-data. Backup local riêng ngoài Git,0600. QA riêng đã dọn sau kiểm tra.
+- Browser bổ sung: Viewer mở trực tiếp /du-lieu được chuyển /tong-quan và chỉ hiện menu Tổng quan. Candidate desktop/mobile có mode, mã hồ sơ và thông tin để phân biệt; ảnh bằng chứng QA lưu ngoài repo. Integration bổ sung global admin can_edit mọi event và Editor sửa công ty/phòng với staff_code trống: đạt.
