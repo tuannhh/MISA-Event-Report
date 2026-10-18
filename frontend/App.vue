@@ -1,14 +1,16 @@
 <script setup>
+import GuestFields from './GuestFields.vue';
+import ContactFields from './ContactFields.vue';
 import PagedRecords from './PagedRecords.vue';
 import {ref,computed,onMounted,onBeforeUnmount} from 'vue';
 import EventListDesktop from './EventListDesktop.vue';import EventListMobile from './EventListMobile.vue';
 import DesktopPage from './DesktopPage.vue';import MobilePage from './MobilePage.vue';
-import {s,initialize,run,login,logout,changePassword,createEvent,addMember,removeMember,saveRow,selectEvent,eventModes,modeOptions,callOptions,isSuper} from './store';
+import {s,initialize,run,login,logout,changePassword,createEvent,addMember,removeMember,saveRow,saveContact,selectEvent,eventModes,modeOptions,callOptions,isSuper} from './store';
 const width=ref(window.innerWidth);const resize=()=>width.value=window.innerWidth;window.addEventListener('resize',resize);onBeforeUnmount(()=>window.removeEventListener('resize',resize));
 const mobile=computed(()=>new URLSearchParams(location.search).get('surface')==='mobile'||width.value<=1024);
 const email=ref(''),password=ref(''),current=ref(''),next=ref(''),confirm=ref('');
 const dialogOpen=computed({get:()=>!!s.dialog,set:v=>{if(!v)s.dialog='';}});
-const dialogTitle=computed(()=>({'new-event':'Tạo sự kiện',member:'Thêm thành viên',account:'Tài khoản',password:'Đổi mật khẩu',row:'Chỉnh sửa đăng ký',events:'Chọn sự kiện','remove-member':'Thu hồi quyền chỉnh sửa'})[s.dialog]||'');
+const dialogTitle=computed(()=>({'new-event':'Tạo sự kiện',member:'Thêm thành viên',account:'Tài khoản',password:'Đổi mật khẩu',row:s.editRow?.id?'Chỉnh sửa khách':'Thêm khách',contact:'Liên hệ khách',events:'Chọn sự kiện','remove-member':'Thu hồi quyền chỉnh sửa'})[s.dialog]||'');
 async function updatePassword(){if(next.value!==confirm.value)throw Error('Mật khẩu xác nhận không khớp.');await changePassword(current.value,next.value);current.value=next.value=confirm.value='';}
 async function signIn(){await login(email.value,password.value);password.value='';}
 onMounted(()=>initialize());
@@ -19,6 +21,7 @@ onMounted(()=>initialize());
 <template v-if="s.dialog==='new-event'"><label class="field">Tên sự kiện<MInput v-model="s.newEvent.name"/></label><label class="field">Ngày tổ chức<MDatePicker v-model="s.newEvent.event_date"/></label><label class="field">Hình thức<MRadioGroup v-model="s.newEvent.mode" :options="eventModes"/></label></template>
 <template v-if="s.dialog==='member'"><label class="field">Họ và tên<MInput v-model="s.member.name"/></label><label class="field">Email<MInput v-model="s.member.email" type="email"/></label></template>
 <template v-if="s.dialog==='remove-member'"><p>Thu hồi quyền chỉnh sửa của {{s.editMember.name}} trong sự kiện này? Tài khoản vẫn xem được các sự kiện với quyền Viewer.</p></template>
-<template v-if="s.dialog==='row'"><label v-for="(label,key) in s.user.fields" :key="key" class="field">{{label}}<MSelect v-if="key==='attendance_mode'" v-model="s.editRow[key]" :options="modeOptions"/><MSelect v-else-if="key==='call_status'" v-model="s.editRow[key]" :options="callOptions"/><MInput v-else v-model="s.editRow[key]" :placeholder="key==='submitted_at'?'dd/mm/yyyy hh:mm':''"/></label><p class="notice">Lưu tạo phiên dữ liệu mới và tạm dừng đồng bộ để tránh ghi đè.</p></template>
+<ContactFields v-if="s.dialog==='contact'"/>
+<GuestFields v-if="s.dialog==='row'"/>
 <template v-if="s.dialog==='events'"><MInput v-model="s.eventSearch" placeholder="Tìm sự kiện"/><PagedRecords :rows="s.events.filter(e=>!s.eventSearch||e.name.toLowerCase().includes(s.eventSearch.toLowerCase()))" v-slot="{rows:pageRows}"><div class="stack"><MButton v-for="e in pageRows" :key="e.id" variant="secondary" @click="run(()=>selectEvent(e.id))">{{e.name}}</MButton></div></PagedRecords></template></div>
-<template #footer><div class="row justify-end" :class="{'mds-mobile-app':mobile}"><MButton variant="secondary" @click="s.dialog=''">Đóng</MButton><MButton variant="primary" v-if="['password','new-event','member','row','remove-member'].includes(s.dialog)" :loading="s.busy" @click="run(({password:updatePassword,'new-event':createEvent,member:addMember,row:saveRow,'remove-member':removeMember})[s.dialog])">{{s.dialog==='remove-member'?'Thu hồi quyền':'Lưu'}}</MButton></div></template></MDialog></template><MToast/></template>
+<template #footer><div class="row justify-end" :class="{'mds-mobile-app':mobile}"><MButton variant="secondary" @click="s.dialog=''">Đóng</MButton><MButton variant="primary" v-if="['password','new-event','member','row','contact','remove-member'].includes(s.dialog)" :loading="s.busy" @click="run(({password:updatePassword,'new-event':createEvent,member:addMember,row:saveRow,contact:saveContact,'remove-member':removeMember})[s.dialog])">{{s.dialog==='remove-member'?'Thu hồi quyền':'Lưu'}}</MButton></div></template></MDialog></template><MToast/></template>

@@ -1,6 +1,6 @@
 // Call attempts are source data, never instructions. Unknown text is not proof of a call.
 const normalized=value=>String(value??'').trim().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/đ/gi,'d').toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
-export const isCallColumn=header=>/^(goi xac nhan|trang thai goi|ket qua goi|call status|confirmation call)(\b|$)/.test(normalized(header));
+export const isCallColumn=header=>/^(goi xac nhan|lien he xac nhan|trang thai goi|ket qua goi|call status|confirmation call)(\b|$)/.test(normalized(header));
 export function callStatus(value){
   const v=normalized(value);
   if(!v||['chua goi','chua lien he','chua thuc hien','not called','pending','no','false','0'].includes(v))return 'not_called';

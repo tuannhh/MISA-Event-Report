@@ -53,3 +53,6 @@ Desktop1440×1000: report controls promoted beside page title, exports removed, 
 - Đây là bằng chứng browser; chưa có native host/thiết bị iOS/Android để kiểm chứng OS font/display, keyboard/lifecycle/gesture và toàn bộ route×role trên host. Không gọi đây là chứng nhận native production. Không thêm quyền thiết bị hay notification.
 
 Final checks:320×568 filter sheet body scrolls, footer bottom568px and no panel overflow. Mobile popup option heights48–56px. Create-event form opens as one sheet, focus on Đóng; closed without saving. Desktop1440px: no root/card overflow, retained toolbar and outside donut labels. Temporary viewport override reset.
+
+## 18/10/2026 — quy trình khách và liên hệ
+Đã kiểm tra browser QA riêng desktop1280/mobile390/320. Các tab Online/Offline/Chưa rõ nằm gọn; toolbar320 dùng hai nút cùng hàng; form liên hệ mở bottom sheet và lưu phản hồi giấy thành công, lịch sử có người/thời điểm. Dashboard theo kênh, field mode/phòng/người phụ trách/phản hồi trong dữ liệu đăng ký. Không coi browser viewport là chứng nhận native host MISA AMIS; vẫn cần thiết bị thật.

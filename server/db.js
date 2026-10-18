@@ -49,6 +49,7 @@ INSERT INTO schema_versions(version) VALUES(1) ON CONFLICT DO NOTHING;
       INSERT INTO schema_versions(version) VALUES(3);
     `);}
     await c.query(await readFile(new URL('./migrations/20261017_target_plan.sql',import.meta.url),'utf8'));
+    await c.query(await readFile(new URL('./migrations/20261018_registration_registry.sql',import.meta.url),'utf8'));
   });
 }
 export async function audit(c,eventId,userId,action,detail={}) {await c.query('INSERT INTO audit(event_id,user_id,action,detail) VALUES($1,$2,$3,$4)',[eventId,userId,action,JSON.stringify(detail)]);}

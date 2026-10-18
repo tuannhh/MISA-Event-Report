@@ -63,3 +63,6 @@ Phản hồi chủ dự án: toolbar/filter quá dài và chart thiếu cân đ�
 
 ## 17/10/2026 — Cloud Run và dữ liệu cloud riêng
 Theo yêu cầu chủ dự án, triển khai service Event Report public HTTPS, chưa giới hạn IP; giữ auth/forced password change. Tạo CloudSQL PostgreSQL riêng, SecretManager, CloudRun sync job và Scheduler5phút; dùng ADC thay JSON key. Chuyển dump local không sessions/invitations, đối chiếu dữ liệu, đặt mật khẩu Superadmin ngẫu nhiên riêng cho cloud. Cập nhật script public-access opt-in, pin secret versions/max1instance và allowlist build context. Không thay nghiệp vụ/schema; không sửa volume/tài khoản local. Bằng chứng live ghi tại VERIFICATION.md, thông tin nhạy cảm bàn giao ngoài Git.
+
+## 18/10/2026 — hồ sơ khách, nhiều nguồn Online/Offline, HCSN
+Triển khai schema v5, nguồn độc lập, persistent registry/human overrides/contact history, phân công nhân viên theo mã, đối chiếu danh tính, mục tiêu theo kênh, sự kiện mới trắng, parser nhiều tab/header linh hoạt, UI desktop/mobile. Chủ dự án chốt HCSN thiếu mode giữ Chưa xác định. Kiểm thử43/43 trên QA riêng; thêm5ca registry chạy lại với regression mục tiêu thiếu/client cũ. Rehearsal dump cloud giữ134khách/119đã gọi/4snapshot cũ/tài khoản nguyên vẹn; sync28/10 sau migration không sinh conflict. Triển khai và dữ liệu24/10 ghi ở VERIFICATION.

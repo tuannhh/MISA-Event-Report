@@ -21,7 +21,7 @@ test('source detection preserves multiple dimensions and rejects invented/PII co
   assert.equal(sourceBreakdowns(rows).find(d=>d.name==='Kênh').values.find(v=>v.value==='').count,1);
 });
 test('combined source filters apply after dedup and with Vietnamese date ranges',()=>{
-  const settings={...defaultSettings(),target:10};
+  const settings={...defaultSettings(),clevel:['CEO/Giám đốc','Chủ doanh nghiệp'],target:10};
   const filtered=summarize(rows,settings,undefined,undefined,{'Kênh':'Đối tác','Chiến dịch':'Tháng 10'});
   assert.equal(filtered.total,1);assert.equal(filtered.clevel,1);assert.equal(filtered.completion,10);
   assert.equal(summarize(rows,settings,'2026-10-15','2026-10-15',{'Kênh':'Đối tác'}).total,1);
@@ -31,7 +31,7 @@ test('combined source filters apply after dedup and with Vietnamese date ranges'
   assert.equal(sourceBreakdowns([{source:'Cũ',tracking:'a'}])[0].values.length,1);
 });
 test('Excel contains selected reports, real numeric cells, both periods and inert imported text',async()=>{
-  const settings={...defaultSettings(),target:1350};
+  const settings={...defaultSettings(),clevel:['CEO/Giám đốc','Chủ doanh nghiệp'],target:1350};
   const current=summarize(rows,settings,undefined,undefined,{'Kênh':'Đối tác'});
   const comparison=summarize(rows,settings,'2026-10-15','2026-10-15',{'Kênh':'Đối tác'});
   current.sourceBreakdowns[0].values[0].label='=HYPERLINK("https://example.test","text")';
@@ -45,7 +45,7 @@ test('Excel contains selected reports, real numeric cells, both periods and iner
   assert.equal(read.getWorksheet('Nguồn khách').getCell('B2').formula,undefined);
 });
 test('KPI registration completion and zero denominators remain deterministic',async()=>{
-  const settings={...defaultSettings(),target:1350};
+  const settings={...defaultSettings(),clevel:['CEO/Giám đốc','Chủ doanh nghiệp'],target:1350};
   assert.equal(summarize(Array.from({length:134},()=>({position:'IT'})),settings).completion,9.93);
   const current=summarize([],{...settings,target:0});
   const wb=await buildReportWorkbook({name:'Empty'},{snapshot:{},range:{},current,comparison:null},[]);

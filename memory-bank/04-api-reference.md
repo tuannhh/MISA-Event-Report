@@ -100,3 +100,13 @@ Report/insights/export thêm mode=all|online|offline|both|unknown (mặc định
 
 ## Phân trang nhật ký — 17/10/2026
 GET `/api/events/:eventId/audit` vẫn giới hạn Admin/Super admin, đổi từ mảng tối đa100 sang `{rows,total,page,pageSize}`. `page` nguyên1–1000000 (mặc định1), `pageSize` chỉ20/50/100 (mặc định20); sai đầu vào trả400. SQL parameterized count+page cùng snapshot, thứ tự id giảm dần, kẹp trang cuối; không cắt lịch sử ở100bản ghi.
+
+## 18/10/2026 — nguồn, hồ sơ và liên hệ
+Các route dưới `/api/events/:eventId` giữ session, forced-password và quyền event hiện hữu.
+- GET `/sources`; PATCH `/sources/:sourceId` {enabled} chỉ Admin/Super admin. Nhiều nguồn Sheet độc lập.
+- GET/PUT `/assignments` chỉ Admin/Super admin, body {assignments:[{code,user_id}]}; user phải là thành viên event.
+- POST `/rows`: thêm khách; PATCH `/rows/:rowId`: {version,row}, xung đột version trả409. Editor chỉ khách thuộc mã đã được phân công. call_status không sửa qua PATCH; client cũ được yêu cầu reload.
+- GET `/rows/:rowId/contacts`: lịch sử, page/pageSize20/50/100. POST cùng đường dẫn: {version,channel,called,response,note,follow_up_at}; channel phone/paper/email/other, response pending/confirmed/declined/no_answer/call_back. Chỉ phone được called=true.
+- GET `/conflicts` phân trang20/50/100; POST `/conflicts/:id` {registration_id: UUID hoặc null} để Admin chọn hồ sơ phù hợp hoặc tạo mới.
+- Import thêm mode auto/online/offline, registrationStatus invited/registered; sheetName `*` đọc mọi tab danh sách, headerRow0 tự tìm header. File Editor chỉ nhận khách đã phân công; nguồn Sheet/mục tiêu chỉ Admin. Commit bổ sung/cập nhật, không thay toàn bộ danh sách.
+- Rows thêm lọc mode, registration_status, department, staff_code, assignee_id, contact_response. Report mode online/offline/unknown áp dụng mục tiêu đúng kênh; unknown không có mục tiêu suy đoán.

@@ -31,6 +31,7 @@ test('automatic import, pending recovery, staff/date filters, historical snapsho
  };
  cookie=(await request('/api/login',{body:{email,password}})).cookie;
  const event=(await request('/api/events',{body:{name:'Auto QA '+id},status:201})).data,base='/api/events/'+event.id;
+ const settings=(await request(base)).data.settings;await request(base+'/settings',{method:'PUT',body:{...settings,clevel:['CEO/Giám đốc']}});
  const csv='Họ và tên,Chức vụ,Thời gian submit,utm_source,Tên tiếp nhận\nA,CEO/Giám đốc,01/09/2026,Web,Nhân viên A\nB,IT,17/10/2026,Email,Nhân viên B\nC,IT,bad,Web,Nhân viên A';
  const upload=async(text,automatic=true)=>{const body=new FormData();body.append('file',new Blob([text]),'qa.csv');if(automatic)body.append('automatic','true');return (await request(base+'/import/file',{body})).data;};
  const first=await upload(csv);assert.equal(first.committed,true);
@@ -45,7 +46,7 @@ test('automatic import, pending recovery, staff/date filters, historical snapsho
  const second=await upload(csv+'\nD,IT,17/10/2026,Web,Nhân viên B');
  assert.equal((await request(base+'/report')).data.current.total,4);
  assert.equal((await request(base+'/report?snapshot='+first.snapshotId)).data.current.total,3);
- const broken=await upload('Name,Unknown\nA,B');assert.equal(broken.needsMapping,true);
+ const broken=await upload('Unknown,Extra\nA,B');assert.equal(broken.needsMapping,true);
  assert.equal((await request(base+'/report')).data.snapshot.id,second.snapshotId);
  assert.equal((await request(base+'/imports/pending')).data.id,broken.id);
  const staged=await upload(csv,false);
@@ -62,13 +63,13 @@ test('automatic import, pending recovery, staff/date filters, historical snapsho
  assert.equal((await request(base+'/imports/pending',{auth:viewer})).data,null);
  const headers=['Chức vụ','Thời gian submit','Tên tiếp nhận'],mapping=guessMapping(headers);
  const source={enabled:true,url:'https://docs.google.com/spreadsheets/d/qa/edit',headerRow:1,mapping,sourceColumns:[],sourceHeaders:headers};
- await pool.query('UPDATE events SET source=$1,synced_at=null WHERE id=$2',[JSON.stringify(source),event.id]);
+ await pool.query("INSERT INTO event_sources(id,event_id,source_key,label,kind,mode,config,enabled) VALUES($1,$2,'qa-sync','QA','sheet','auto',$3,true)",[randomUUID(),event.id,JSON.stringify(source)]);
  let reads=0;const read=async()=>{reads++;await new Promise(r=>setTimeout(r,25));return {headers,raw:[{'Chức vụ':'IT','Thời gian submit':'17/10/2026','Tên tiếp nhận':'QA'}]};};
  const results=await Promise.all([0,1,2].map(()=>syncEvent(event.id,null,{automatic:true,minIntervalMs:15000,read})));
  assert.equal(reads,1);assert.equal(results.filter(r=>r.changed).length,1);
  const refreshed=(await request(base+'/report')).data;assert.ok(refreshed.sourceDimensions.some(d=>d.name==='Tên tiếp nhận'));const before=refreshed.snapshot.id;
- await assert.rejects(()=>syncEvent(event.id,null,{read:async()=>{throw Error('source offline');}}),/source offline/);
+ assert.ok((await syncEvent(event.id,null,{read:async()=>{throw Error('source offline');}})).warning);
  assert.equal((await request(base+'/report')).data.snapshot.id,before);
- await pool.query("UPDATE events SET source=jsonb_set(source,'{enabled}','false') WHERE id=$1",[event.id]);
+ await pool.query("UPDATE event_sources SET enabled=false WHERE event_id=$1",[event.id]);
  assert.equal((await syncEvent(event.id,null,{automatic:true,read})).skipped,true);assert.equal(reads,1);
 });

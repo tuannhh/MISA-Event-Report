@@ -1,7 +1,7 @@
 // Source dimensions preserve the original column labels; no contact values go to AI discovery.
 const normalized = value => String(value ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/đ/g, 'd').trim();
 export function isStaffDimension(header) {
-  return /(nhan vien|nguoi moi|nguoi phu trach|nguoi tiep nhan|ten tiep nhan|staff|employee|assignee|sales.?rep|^owner$)/.test(normalized(header));
+  return /(^nv (onb|am)$|nhan vien|nguoi moi|nguoi phu trach|nguoi tiep nhan|ten tiep nhan|staff|employee|assignee|sales.?rep|^owner$)/.test(normalized(header));
 }
 export function safeSourceHeader(header) {
   const n = normalized(header);
@@ -19,7 +19,7 @@ export function validateSourceColumns(headers, columns) {
   return columns;
 }
 export function sourceValues(row) {
-  return row.source_details && Object.keys(row.source_details).length ? row.source_details : {'Nguồn khách': row.source || '', 'Mã tracking': row.tracking || ''};
+  return {...(row.source_details && Object.keys(row.source_details).length ? row.source_details : {'Nguồn khách': row.source || '', 'Mã tracking': row.tracking || ''}),...(row.department?{'Phòng / nhóm':row.department}:{}),...(row.staff_code?{'Mã nhân viên':row.staff_code}:{})};
 }
 export function matchesSources(row, filters = {}) {
   const values = sourceValues(row);

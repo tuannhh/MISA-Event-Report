@@ -2,7 +2,7 @@ import {z} from 'zod';
 import {norm,localDay,parseDate} from './domain.js';
 import {identifiers} from './identifiers.js';
 import {fail} from './auth.js';
-const keys=['call_status','position','utm_content','company'];
+const keys=['call_status','position','utm_content','company','attendance_mode','registration_status','department','staff_code','assignee_name','contact_response'];
 const day=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>parseDate(v)!==null);
 export function registrationQuery(input,query){
  const pageSize=z.coerce.number().refine(v=>[20,50,100].includes(v)).parse(query.pageSize||20);

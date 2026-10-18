@@ -1,8 +1,9 @@
+import {initializeRegistry,mergeImport,participationRows,upsertSource,fingerprint} from './registry.js';
 import {parseTargetPlan,targetSheetName} from './target-plan.js';
 import ExcelJS from 'exceljs';
 import {parse} from 'csv-parse/sync';
 import {GoogleAuth} from 'google-auth-library';
-import {clean,guessMapping,normalizeRows} from './domain.js';
+import {clean,norm,guessMapping,normalizeRows} from './domain.js';
 import {fail} from './auth.js';
 import {randomUUID,createHash} from 'node:crypto';
 import {pool,transaction,audit} from './db.js';
@@ -31,15 +32,18 @@ export async function googleRequest(url,options={}){
   try {return (await client.request({url,timeout:90000,...options})).data;}
   catch(e){const code=e.response?.status;const disabled=e.response?.data?.error?.details?.find(d=>d.reason==='SERVICE_DISABLED');console.warn(JSON.stringify({type:'google_error',status:code||'network',reason:disabled?'SERVICE_DISABLED':undefined}));fail(code===403?403:502,disabled?`Google Cloud chưa bật API ${disabled.metadata?.service||'cần thiết'}. Vui lòng bật API trong project cấu hình.`:code===403?'Tài khoản dịch vụ chưa được cấp quyền truy cập Sheet hoặc model Google Cloud.':'Không thể kết nối Google. Kiểm tra cấu hình và thử lại.');}
 }
-function fromMatrix(matrix,label,headerRow=1){
+export function fromMatrix(matrix,label,headerRow=0){
+  if(!headerRow){let best=-1;headerRow=1;matrix.slice(0,50).forEach((row,i)=>{const mapped=guessMapping(row.map(clean));const score=Object.values(mapped).filter(Boolean).length;if(score>best){best=score;headerRow=i+1;}});}
   if(!Number.isInteger(headerRow)||headerRow<1||headerRow>50)fail(400,'Dòng tiêu đề phải từ 1 đến 50.');
   if(matrix.length>MAX_ROWS+50)fail(400,`Giới hạn ${MAX_ROWS} dòng mỗi lần nhập.`);
   const headers=(matrix[headerRow-1]||[]).map((h,i)=>clean(h)||`Cột ${i+1}`);
   if(!headers.length||new Set(headers).size!==headers.length)fail(400,'Tiêu đề cột trống hoặc trùng nhau; hãy chọn đúng dòng tiêu đề.');
   if(headers.length>100)fail(400,'Giới hạn 100 cột.');
-  const raw=matrix.slice(headerRow).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]??'']))).filter(r=>Object.values(r).some(v=>clean(v)));
+  const mapping=guessMapping(headers);
+  const identity=['name','phone','email','company'].map(k=>mapping[k]).filter(Boolean);
+  const raw=matrix.slice(headerRow).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]??'']))).filter(r=>(identity.length?identity.some(k=>clean(r[k])):Object.values(r).some(v=>clean(v)))&&!/^(tong cong|tong so|total)$/i.test(norm(r[mapping.name])));
   if(raw.length>MAX_ROWS)fail(400,`Giới hạn ${MAX_ROWS} dòng dữ liệu.`);
-  return {headers,raw,label,mapping:guessMapping(headers)};
+  return {headers,raw,label,mapping,headerRow};
 }
 export async function readFile(buffer,filename,sheetName,headerRow,{goals=true}={}){
   if(/\.csv$/i.test(filename)){let matrix;try{matrix=parse(buffer.toString('utf8'),{bom:true,relax_column_count:true,skip_empty_lines:true});}catch{fail(400,'CSV không hợp lệ.');}return fromMatrix(matrix,filename,headerRow);}
@@ -49,12 +53,16 @@ export async function readFile(buffer,filename,sheetName,headerRow,{goals=true}=
   for(let p=0;p+46<buffer.length;p++){if(buffer.readUInt32LE(p)===0x02014b50){inflated+=buffer.readUInt32LE(p+24);entries++;}}
   if(!entries||inflated>80*1024*1024)fail(400,'File Excel quá lớn sau giải nén hoặc không hợp lệ.');
   const wb=new ExcelJS.Workbook();try{await wb.xlsx.load(buffer);}catch{fail(400,'Không đọc được Excel.');}
-  const ws=sheetName?wb.getWorksheet(sheetName):(wb.worksheets.find(w=>!targetSheetName(w.name))||wb.worksheets[0]);if(!ws)fail(400,'Không tìm thấy tab Excel đã chọn.');
-  if(ws.rowCount>MAX_ROWS+50||ws.columnCount>100)fail(400,'File vượt giới hạn 20.000 dòng / 100 cột.');
-  const matrix=[];for(let n=1;n<=ws.rowCount;n++){const row=ws.getRow(n);matrix.push(Array.from({length:ws.columnCount},(_,i)=>{const c=row.getCell(i+1);const v=c.value;if(v instanceof Date)return v.toISOString().replace(/Z$/,'+07:00');if(v&&typeof v==='object'){if('formula'in v||'sharedFormula'in v)return v.result??'';if(v.richText)return v.richText.map(x=>x.text).join('');if(v.text)return v.text;return '';}return v??'';}));}
+  const selected=sheetName==='*'?wb.worksheets.filter(w=>!targetSheetName(w.name)):[sheetName?wb.getWorksheet(sheetName):(wb.worksheets.find(w=>!targetSheetName(w.name))||wb.worksheets[0])];
+  if(selected.some(w=>!w)||!selected.length)fail(400,'Không tìm thấy tab Excel đã chọn.');
+  const batches=selected.map(ws=>{
+   if(ws.rowCount>MAX_ROWS+50||ws.columnCount>100)fail(400,'File vượt giới hạn 20.000 dòng / 100 cột.');
+   const matrix=[];for(let n=1;n<=ws.rowCount;n++){const row=ws.getRow(n);matrix.push(Array.from({length:ws.columnCount},(_,i)=>{const c=row.getCell(i+1);const v=c.value;if(v instanceof Date)return v.toISOString().replace(/Z$/,'+07:00');if(v&&typeof v==='object'){if('formula'in v||'sharedFormula'in v)return v.result??'';if(v.richText)return v.richText.map(x=>x.text).join('');if(v.text)return v.text;return '';}return v??'';}));}
+   const data=fromMatrix(matrix,`${filename} · ${ws.name}`,headerRow);data.raw=data.raw.map(r=>({...r,__sheet:ws.name}));return data;
+  });
   const discovery=goals?await discoverTargetSheet(wb.worksheets.map(w=>w.name)):{name:null};
   let targetPlan=null;if(discovery.name){const plan=wb.getWorksheet(discovery.name);if(plan.rowCount>500)fail(400,'Sheet mục tiêu vượt giới hạn 500 dòng.');const values=Array.from({length:plan.rowCount},(_,i)=>Array.from({length:8},(_,j)=>{const v=plan.getRow(i+1).getCell(j+2).value;return v&&typeof v==='object'?(v.result??v.text??''):v??'';}));try{targetPlan=parseTargetPlan(values,plan.name);}catch(e){fail(400,e.message);}}
-  return {...fromMatrix(matrix,`${filename} · ${ws.name}`,headerRow),tabs:wb.worksheets.map(w=>w.name),targetPlan:targetPlan?{...targetPlan,method:discovery.method}:null,targetNotice:discovery.notice};
+  return {...combineBatches(batches,filename),filename,tabs:wb.worksheets.map(w=>w.name),targetPlan:targetPlan?{...targetPlan,method:discovery.method}:null,targetNotice:discovery.notice};
 }
 export function parseSheetUrl(url){
   let u;try{u=new URL(url);}catch{fail(400,'Link Google Sheet không hợp lệ.');}
@@ -62,21 +70,40 @@ export function parseSheetUrl(url){
   if(u.protocol!=='https:'||u.hostname!=='docs.google.com'||!m)fail(400,'Chỉ nhận link https://docs.google.com/spreadsheets/d/...');
   return {id:m[1],gid:new URLSearchParams(u.hash.slice(1)).get('gid')||u.searchParams.get('gid')};
 }
-export async function readSheet(url,sheetName,headerRow=1){
-  const {id,gid}=parseSheetUrl(url);
-  const meta=await googleRequest(`https://sheets.googleapis.com/v4/spreadsheets/${id}?fields=properties.title,sheets.properties`);
-  const tab=sheetName?meta.sheets.find(s=>s.properties.title===sheetName):meta.sheets.find(s=>String(s.properties.sheetId)===gid)||meta.sheets[0];
-  if(!tab)fail(400,'Không tìm thấy tab Google Sheet.');
-  const name=tab.properties.title;
-  const range=`'${name.replaceAll("'","''")}'!A1:CV${MAX_ROWS+51}`;
+function combineBatches(batches,label){
+ const headers=[...new Set(batches.flatMap(b=>b.headers))],raw=batches.flatMap(b=>b.raw);
+ if(raw.length>MAX_ROWS)fail(400,'Tổng các tab vượt giới hạn 20.000 dòng.');
+ return {headers,raw,label,batches,mapping:guessMapping(headers)};
+}
+export function normalizeData(data,mapping,sourceColumns=[]){
+ if(!data.batches)return normalizeRows(data.raw,mapping,sourceColumns);
+ const parts=data.batches.filter(b=>b.raw.length).map(b=>{
+  const local=guessMapping(b.headers);
+  for(const [field,col] of Object.entries(mapping))if(b.headers.includes(col))local[field]=col;
+  return normalizeRows(b.raw,local,sourceColumns.filter(h=>b.headers.includes(h)));
+ });
+ const rows=parts.flatMap(p=>p.rows);if(!rows.length)fail(400,'Không tìm thấy khách. Các dòng chỉ có STT được bỏ qua.');
+ return {rows,quality:parts.reduce((sum,p)=>{for(const [k,v] of Object.entries(p.quality))sum[k]=(sum[k]||0)+v;return sum;},{})};
+}
+export async function readSheet(url,sheetName,headerRow=0){
+ const {id,gid}=parseSheetUrl(url);
+ const meta=await googleRequest(`https://sheets.googleapis.com/v4/spreadsheets/${id}?fields=properties.title,sheets.properties`);
+ const discovery=await discoverTargetSheet(meta.sheets.map(s=>s.properties.title));
+ const selected=sheetName==='*'?meta.sheets.filter(s=>s.properties.title!==discovery.name):[sheetName?meta.sheets.find(s=>s.properties.title===sheetName):meta.sheets.find(s=>String(s.properties.sheetId)===gid)||meta.sheets[0]];
+ if(selected.some(s=>!s)||!selected.length)fail(400,'Không tìm thấy tab Google Sheet.');
+ if(selected.length>40)fail(400,'Tối đa 40 tab mỗi nguồn.');
+ const batches=[];
+ for(const tab of selected){const title=tab.properties.title,range=`'${title.replaceAll("'","''")}'!A1:CV${MAX_ROWS+51}`;
   const result=await googleRequest(`https://sheets.googleapis.com/v4/spreadsheets/${id}/values/${encodeURIComponent(range)}?valueRenderOption=FORMATTED_VALUE`);
-  const discovery=await discoverTargetSheet(meta.sheets.map(s=>s.properties.title));
-  let targetPlan=null;
-  if(discovery.name){const title=discovery.name;const targetRange=`'${title.replaceAll("'","''")}'!B1:I501`;
-    const goals=await googleRequest(`https://sheets.googleapis.com/v4/spreadsheets/${id}/values/${encodeURIComponent(targetRange)}?valueRenderOption=FORMATTED_VALUE`);
-    try{targetPlan=parseTargetPlan(goals.values||[],title);}catch(e){fail(400,e.message);}
-  }
-  return {targetPlan:targetPlan?{...targetPlan,method:discovery.method}:null,targetNotice:discovery.notice,...fromMatrix(result.values||[],`${meta.properties.title} · ${name}`,headerRow),sheetName:name,tabs:meta.sheets.map(s=>s.properties.title),source:{url,sheetName:name,headerRow}};
+  if(!(result.values||[]).some(r=>r.some(clean)))continue;
+  const batch=fromMatrix(result.values||[],title,headerRow);batch.raw=batch.raw.map(r=>({...r,__sheet:title}));batches.push(batch);
+ }
+ let targetPlan=null;
+ if(discovery.name){const title=discovery.name,range=`'${title.replaceAll("'","''")}'!B1:I501`;
+  const goals=await googleRequest(`https://sheets.googleapis.com/v4/spreadsheets/${id}/values/${encodeURIComponent(range)}?valueRenderOption=FORMATTED_VALUE`);
+  try{targetPlan=parseTargetPlan(goals.values||[],title);}catch(e){fail(400,e.message);}
+ }
+ return {...combineBatches(batches,meta.properties.title),targetPlan:targetPlan?{...targetPlan,method:discovery.method}:null,targetNotice:discovery.notice,sheetName:sheetName==='*'?'*':selected[0].properties.title,tabs:meta.sheets.map(s=>s.properties.title),source:{url,sheetName:sheetName==='*'?'*':selected[0].properties.title,headerRow}};
 }
 export async function gemini(task,data,schema){
   const project=process.env.GOOGLE_CLOUD_PROJECT;if(!project)fail(503,'Chưa cấu hình Google Cloud project.');
@@ -85,7 +112,7 @@ export async function gemini(task,data,schema){
   if(result.candidates?.[0]?.finishReason!=='STOP')fail(502,'Gemini chưa trả kết quả đầy đủ. Hãy thử lại.');
   try{return JSON.parse(result.candidates[0].content.parts.filter(p=>!p.thought).map(p=>p.text||'').join(''));}catch{fail(502,'Gemini trả kết quả không hợp lệ.');}
 }
-export async function suggestMapping(headers){return gemini('Ghép tên cột với schema. Mỗi giá trị phải là đúng một tên cột trong DATA hoặc chuỗi rỗng nếu không có. Chọn utm_content làm tracking nếu có.',headers,{type:'OBJECT',properties:Object.fromEntries(Object.keys(guessMapping([])).map(k=>[k,{type:'STRING'}])),required:Object.keys(guessMapping([]))});}
+export async function suggestMapping(headers){return gemini('Ghép tên cột với schema. Mỗi giá trị phải là đúng một tên cột trong DATA hoặc chuỗi rỗng nếu không có. Chọn utm_content làm tracking nếu có. Không ghép họ tên, tên đơn vị, số điện thoại hoặc email vào chức vụ/ngày. Thiếu ngày hoặc chức vụ thì trả chuỗi rỗng. Payload.confirmation_field_input là xác nhận biểu mẫu, không phải bằng chứng gọi điện. Trạng thái UPDATE BÁO CÁO không phải trạng thái liên hệ.',headers,{type:'OBJECT',properties:Object.fromEntries(Object.keys(guessMapping([])).map(k=>[k,{type:'STRING'}])),required:Object.keys(guessMapping([]))});}
 export async function discoverSourceColumns(headers){
   const fallback=guessSourceColumns(headers);
   if(!process.env.GOOGLE_CLOUD_PROJECT)return {columns:fallback,method:'rules',notice:'Chưa cấu hình Gemini. Đã gợi ý cột nguồn theo tên cột; bạn có thể chỉnh trước khi nhập.'};
@@ -101,25 +128,31 @@ export async function saveSnapshot(c,eventId,userId,label,rows,quality,targetPla
   await audit(c,eventId,userId,'snapshot.created',{id,label,count:rows.length});return id;
 }
 export async function syncEvent(eventId,userId=null,{automatic=false,minIntervalMs=0,read=readSheet}={}){
-  return transaction(async c=>{
-    // One transaction lock covers fetch and commit so a stale sync cannot overwrite a new upload.
-    const {rows:[event]}=await c.query('SELECT * FROM events WHERE id=$1 FOR UPDATE',[eventId]);
-    if(!event?.source?.enabled){if(automatic)return {changed:false,skipped:true};fail(400,'Sự kiện chưa bật đồng bộ Google Sheet.');}
-    if(minIntervalMs && event.synced_at && Date.now()-new Date(event.synced_at).getTime()<minIntervalMs)return {changed:false,skipped:true};
-    const data=await read(event.source.url,event.source.sheetName,event.source.headerRow);
-    const mapping={...event.source.mapping};if(!mapping.tax_id)mapping.tax_id=guessMapping(data.headers).tax_id;
-    for(const col of Object.values(mapping))if(col&&!data.headers.includes(col))fail(400,`Cột nguồn đã thay đổi: ${col}. Nhập và ghép cột lại.`);
-    const discovery=event.source.sourceColumns&&JSON.stringify(event.source.sourceHeaders)===JSON.stringify(data.headers)?{...event.source.discovery,columns:validateSourceColumns(data.headers,event.source.sourceColumns)}:await discoverSourceColumns(data.headers);
-    if(!event.source.staffDimensionsVersion)discovery.columns=[...new Set([...discovery.columns,...data.headers.filter(h=>safeSourceHeader(h)&&isStaffDimension(h))])].slice(0,12);
-    const parsed=normalizeRows(data.raw,mapping,discovery.columns);if(data.targetNotice)parsed.quality.targetNotice=data.targetNotice;
-    const fingerprint=createHash('sha256').update(JSON.stringify({rows:parsed.rows,targetPlan:data.targetPlan||null})).digest('hex');
-    if(fingerprint!==event.source.fingerprint){await saveSnapshot(c,eventId,userId,`Đồng bộ · ${data.label}`,parsed.rows,parsed.quality,data.targetPlan);}
-    await c.query('UPDATE events SET source=$1,synced_at=now(),sync_error=null WHERE id=$2',[JSON.stringify({...event.source,staffDimensionsVersion:1,sourceColumns:discovery.columns,sourceHeaders:data.headers,discovery,fingerprint}),eventId]);
-    return {changed:fingerprint!==event.source.fingerprint,count:parsed.rows.length};
-  });
+ // Fetch each source independently; serialize imports and human edits with the event lock.
+ const {rows:sources}=await pool.query('SELECT * FROM event_sources WHERE event_id=$1 AND enabled ORDER BY id',[eventId]);
+ if(!sources.length){if(automatic)return {changed:false,skipped:true};fail(400,'Chưa bật nguồn Google Sheet.');}
+ let changed=false;const warnings=[];
+ for(const original of sources){
+  if(minIntervalMs&&original.synced_at&&Date.now()-new Date(original.synced_at).getTime()<minIntervalMs)continue;
+  try{await transaction(async c=>{
+   const {rows:[event]}=await c.query('SELECT * FROM events WHERE id=$1 FOR UPDATE',[eventId]);
+   const {rows:[source]}=await c.query('SELECT * FROM event_sources WHERE id=$1 AND enabled',[original.id]);if(!source)return;if(minIntervalMs&&source.synced_at&&Date.now()-new Date(source.synced_at).getTime()<minIntervalMs)return;
+   const data=await read(source.config.url,source.config.sheetName,source.config.headerRow),mapping={...guessMapping(data.headers),...source.config.mapping};
+   for(const [k,v] of Object.entries(mapping))if(v&&!data.headers.includes(v))mapping[k]=guessMapping(data.headers)[k]||'';
+   const discovery=JSON.stringify(source.config.sourceHeaders)===JSON.stringify(data.headers)&&source.config.sourceColumns?{columns:validateSourceColumns(data.headers,source.config.sourceColumns)}:await discoverSourceColumns(data.headers),parsed=normalizeData(data,mapping,discovery.columns);
+   const rows=participationRows(parsed.rows,source.mode,event.mode,source.config.registrationStatus),hash=fingerprint({rows,plan:data.targetPlan});
+   if(source.config.fingerprint!==hash){
+    if(data.targetPlan)await c.query('UPDATE event_sources SET target_plan=$1,target_updated_at=CASE WHEN target_plan IS DISTINCT FROM $1::jsonb THEN now() ELSE target_updated_at END WHERE id=$2',[JSON.stringify(data.targetPlan),source.id]);
+    await mergeImport(c,event,source,rows,userId,{quality:parsed.quality,label:`Đồng bộ · ${data.label}`});changed=true;
+   }
+   await c.query('UPDATE event_sources SET config=$1,synced_at=now(),error=null WHERE id=$2',[JSON.stringify({...source.config,mapping,sourceColumns:discovery.columns,sourceHeaders:data.headers,fingerprint:hash}),source.id]);
+  });}catch(e){const message=e.status?e.message:'Đồng bộ thất bại; dữ liệu và lịch sử liên hệ được giữ nguyên.';warnings.push(message);await pool.query('UPDATE event_sources SET error=$1,synced_at=now() WHERE id=$2',[message,original.id]);}
+ }
+ await pool.query('UPDATE events SET synced_at=now(),sync_error=$1 WHERE id=$2',[warnings.join(' · ')||null,eventId]);
+ return {changed,warning:warnings.join(' · ')||undefined};
 }
 export async function syncAll(){
-  const {rows}=await pool.query("SELECT id FROM events WHERE source->>'enabled'='true' AND (synced_at IS NULL OR synced_at<now()-interval '4 minutes') ORDER BY synced_at NULLS FIRST LIMIT 20");
-  for(const e of rows)try{await syncEvent(e.id);}catch(err){await pool.query('UPDATE events SET sync_error=$1,synced_at=now() WHERE id=$2',[err.status?err.message:'Đồng bộ thất bại. Dữ liệu trước đó được giữ nguyên.',e.id]);}
-  await pool.query("DELETE FROM sessions WHERE expires_at<now(); DELETE FROM imports WHERE created_at<now()-interval '1 day'; DELETE FROM invitations WHERE expires_at<now()");
+ const {rows}=await pool.query("SELECT DISTINCT event_id AS id FROM event_sources WHERE enabled AND (synced_at IS NULL OR synced_at<now()-interval '4 minutes') LIMIT 20");
+ for(const e of rows)await syncEvent(e.id);
+ await pool.query("DELETE FROM sessions WHERE expires_at<now(); DELETE FROM imports WHERE created_at<now()-interval '1 day'; DELETE FROM invitations WHERE expires_at<now()");
 }

@@ -87,3 +87,10 @@ Gemini đã tự tạo nhận xét trên local, KPI không chờ AI. Nguồn She
 - Scheduler OAuth dispatch kiểm tra thủ công và lịch15:25UTC thành công; hai execution `misa-event-report-sync-zkjtm`/`misa-event-report-sync-5bsdg` succeeded1, job ENABLED và status không lỗi.
 - Cloud SQL backup on-demand `1792250606197` SUCCESSFUL; backup tự động khi bậtPITR `1792250437208` cũng SUCCESSFUL.
 - Docker build stage `build` thành công với allowlist mới; các lớp npm/Vite cache từ source đã kiểm tra. `git diff --check` đạt.
+
+## 18/10/2026 — registry v5, kiểm chứng trước triển khai
+- Docker build thành công; toàn bộ43tests đạt0skip trên QA database riêng. Registry5tests chạy lại sau khi bổ sung partial-target/null, unknown-target/null và client cũ sửa call_status nhận409.
+- Rehearsal bằng dump cloud trong database migration_qa:134khách/119đã gọi,4snapshot gốc checksum nguyên vẹn, credential/forced-password flags không đổi; sync nguồn28/10 sau backfill0conflict.
+- Hai nguồn24/10 nhập qua API QA:87lượt(79Online,3Offline,5Chưa xác định),4dòng đối chiếu; nhập lại cả hai nguồn vẫn87/4. Không suy đoán mục tiêu/C-Level; ngày thiếu vẫn null. Đây là số ở thời điểm QA, rollout sẽ đối chiếu lại nguồn thật.
+- Browser QA: desktop1280, mobile390 và320; tab kênh, lọc, thêm khách, contact sheet/lịch sử, giấy phản hồi và trạng thái lưu thành công.320px không còn nút nhập/thêm tràn ngang. Native host/thiết bị thật chưa nghiệm thu.
+- Cloud SQL backup trước nâng cấp:1792314455030 SUCCESSFUL; dump riêng ngoài Git, không đưa dữ liệu/tài khoản vào image.

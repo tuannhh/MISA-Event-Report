@@ -61,3 +61,9 @@ MUpload: inputRef.click() nổi lên label @click.prevent sẽ bị hủy defaul
 17/10/2026: normalize tiêu đề phải xử lý cả Đ/đ và xuống dòng. .gitignore có *.sql nên cần ngoại lệ !server/migrations/*.sql cho delta v4. Không gửi dữ liệu mục tiêu nhân viên qua AI diễn giải. Sheet mẫu có tổng mục tiêu khác tổng chi tiết và các công thức tỷ lệ không nhất quán; không suy diễn/bù mục tiêu, hiển thị chênh lệch và ghi rõ mẫu số trongapp.
 
 17/10/2026: File mẫu xuất từ artifact-tool dùng tiền tố OOXML x: khiến ExcelJS phiên bản hiện tại lỗi workbook.sheets. Chuẩn hóa tiền tố x: sang default namespace (giữ nguyên URI) trong XML của XLSX đã khắc phục. Regression phải đọc chính frontend/assets/member-template.xlsx rồi thêm dữ liệu và đi qua member import, không chỉ tạo workbook thay thế trong test.
+
+## 18/10/2026 — lưu ý registry v5
+- Không dùng snapshot array index làm định danh khách; dùng UUID/source binding. Dòng có cùng số điện thoại không đủ điều kiện tự ghép. Seed canonical binding khi nâng cấp trước sync đầu.
+- Không đưa kết quả gọi/ghi chú nhân viên vào fingerprint nhận dạng nguồn. Không dùng default unknown để xóa đã gọi. Không để PATCH từng field làm rỗng phone/tax_id không có trong payload.
+- Dừng writer v4 và Scheduler khi cutover v5; maintenance server không nối DB. Sau v5 chỉ forward-fix hoặc restore vào database khác đã đối soát; không route app v4 vào schema/data mới.
+- Dữ liệu thực có thể thiếu ngày, chức vụ hoặc mục tiêu. Giữ null/rỗng; tuyệt đối không lấy ngày import hoặc chức danh suy đoán bù vào.

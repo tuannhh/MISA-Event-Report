@@ -32,11 +32,11 @@ export function parseTargetPlan(matrix,label){
 export function summarizeTargetPlan(plan,selected,clevel){
  if(!plan)return null;
  const counts=new Map(),known=new Set(plan.rows.filter(r=>r.kind==='item').map(r=>norm(r.code)));
- for(const r of selected){const key=norm(r.utm_content??r.tracking),v=counts.get(key)||{count:0,clevel:0};v.count++;if(clevel(r))v.clevel++;counts.set(key,v);}
+ for(const r of selected){const key=norm(r.staff_code||r.utm_content||r.tracking),v=counts.get(key)||{count:0,clevel:0};v.count++;if(clevel(r))v.clevel++;counts.set(key,v);}
  const rows=plan.rows.map(r=>{
   const codes=r.kind==='item'?[norm(r.code)]:plan.rows.filter(t=>t.kind==='item'&&(r.kind==='total'||t.parent===r.id)).map(t=>norm(t.code));
   const count=codes.reduce((n,k)=>n+(counts.get(k)?.count||0),0),c=codes.reduce((n,k)=>n+(counts.get(k)?.clevel||0),0);
   return {...r,count,clevel:c,completion:pct(count,r.target),clevel_completion:pct(c,r.target)};
  });
- return {...plan,rows,unmatched:selected.filter(r=>!known.has(norm(r.utm_content??r.tracking))).length};
+ return {...plan,rows,unmatched:selected.filter(r=>!known.has(norm(r.staff_code||r.utm_content||r.tracking))).length};
 }

@@ -85,3 +85,16 @@ html,body,#app{height:100%;overflow:hidden}body{margin:0;font:13px/1.5 Inter,san
 
 .chart-canvas{position:relative;min-width:0}.donut-total{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none}.donut-total strong{font-size:24px;line-height:1.25;font-variant-numeric:tabular-nums}.donut-total span{font-size:12px;color:var(--mds-text-secondary)}
 .mobile-options [role=option]{height:auto;min-height:var(--mds-mobile-touch-target,48px);white-space:normal;padding-top:8px;padding-bottom:8px;font-size:14px;line-height:20px}.mobile-options [role=option]>span{min-width:0;overflow-wrap:anywhere}
+
+.participation-tabs{flex-shrink:0;max-width:100%;overflow-x:auto}
+.registration-actions>div:first-child{max-width:320px}
+.source-entry,.contact-entry{padding:12px 0;border-bottom:1px solid var(--mds-border)}
+.source-entry:last-child,.contact-entry:last-child{border-bottom:0}
+.mds-mobile-app .registration-actions{align-items:stretch;gap:8px;flex-wrap:wrap}
+.mds-mobile-app .registration-actions>div{flex:1;min-width:0}
+.mds-mobile-app .registration-actions .row{flex-wrap:nowrap}
+.mds-mobile-app .participation-tabs{font-size:13px}
+.mds-mobile-app .registration-actions{display:grid;grid-template-columns:minmax(0,1fr)}
+.mds-mobile-app .registration-actions>div:first-child{max-width:none}
+.mds-mobile-app .registration-actions .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.mds-mobile-app .registration-actions button{min-width:0}

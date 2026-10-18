@@ -60,3 +60,6 @@ Chưa chốt RPO/RTO, retention nghiệp vụ, cảnh báo/on-call và load test
 - [Cloud Run + Cloud SQL PostgreSQL](https://docs.cloud.google.com/sql/docs/postgres/connect-run)
 - [Public Cloud Run services](https://docs.cloud.google.com/run/docs/authenticating/public)
 - [Schedule Cloud Run jobs](https://docs.cloud.google.com/run/docs/execute/jobs-on-schedule)
+
+## Cutover v5 (18/10/2026)
+Trước migration: backup Cloud SQL thành công, dump riêng ngoài Git, rehearsal trên QA. Pause Scheduler, đợi job cũ hoàn tất; deploy image mới với command `node server/maintenance.js` (503, health200, không DB), rồi chuyển command sang `node server/index.js` để migrate/backfill. Cập nhật job cùng digest, chạy kiểm chứng rồi resume Scheduler. Không thay secret/password/origin/ingress/SQL. Sau khi writer v5 hoạt động, hướng dẫn rollback UI về revision v4 phía trên KHÔNG áp dụng; dùng maintenance + forward-fix hoặc restore/PITR vào DB khác và đối soát.
