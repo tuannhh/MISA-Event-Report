@@ -120,3 +120,16 @@ Các regression cuối: khách đã mời cũng theo mode/ngày/nguồn; nhận 
 - Job cùng digest: misa-event-report-sync-zvkbz Completed=True. Scheduler giữ ENABLED, mỗi5phút.
 - Local8096 cùng source/dist, schema6,134registrations/1user; giữ Docker project misa-event-insights/volumeevent-data. Backup local riêng ngoài Git,0600. QA riêng đã dọn sau kiểm tra.
 - Browser bổ sung: Viewer mở trực tiếp /du-lieu được chuyển /tong-quan và chỉ hiện menu Tổng quan. Candidate desktop/mobile có mode, mã hồ sơ và thông tin để phân biệt; ảnh bằng chứng QA lưu ngoài repo. Integration bổ sung global admin can_edit mọi event và Editor sửa công ty/phòng với staff_code trống: đạt.
+
+
+## 18/10/2026 — toolbar đăng ký và cấu hình mật khẩu ban đầu
+- App commit c5223fe. Docker/Vite build đạt;44/44tests đạt0skip trên QA database riêng với default credential mới do chủ dự án yêu cầu. Member/Admin mới đăng nhập bằng cấu hình mới, password change hoạt động, account đã đổi password giữ nguyên khi thêm lại. Không có secret trong source/build.
+- Browser QA desktop1440px: Nhập khách/Thêm khách cùng hàng tiêu đề với Tạo sự kiện; không còn dropdown Tất cả khách trong nội dung. Dropdown nằm trong Bộ lọc; chọn Đã mời cho0kết quả trên fixture4khách đăng ký, badge1; xóa lọc khôi phục4khách. Mobile390px: status trong sheet với footer cố định, hai nút nhập/thêm cùng hàng. Ảnh QA lưu ngoài Git.
+- Local8096 cập nhật cùng image frontend, healthy; giữ134registrations/1user và project/volume cũ. Không migration/schema change, không sửa account hoặc dữ liệu khách.
+- Native host MISA AMIS/thiết bị thật chưa kiểm chứng; không coi kiểm thử viewport là chứng nhận native.
+
+### Rollout toolbar và default credential
+- Cloud Build fae2ccc4-2e19-4749-9609-2de83e9c2087 SUCCESS; image digest sha256:050d2e155069b2006c8c02a098436dcb9ce7dce5a55deb772ed32f2ba0e059f1, commit c5223fe.
+- Cloud Run misa-event-report-00008-xuk đã kiểm tra ở0%traffic (health200/login200/admins401), sau đó nhận100%. URL chính thức health/login200. Tag verify-v7 đã dọn. Rollback UI có thể chuyển về00005-geq nhưng revision đó dùng default password phiên bản cũ.
+- Service và sync job trỏ cùng image, DEFAULT_MEMBER_PASSWORD tham chiếu misa-event-report-member-password:2. Chỉ thay cấu hình ban đầu cho tài khoản mới; không reset user và không đổi secret Super admin/database. Local đã đối chiếu đúng default credential bằng so sánh boolean không in secret. Quét tracked files không chứa mật khẩu do người dùng cung cấp.
+- Không thay đổi cơ chế sync, không chạy import thật hoặc kiểm thử tạo account trên production. QA containers/tmpfs đã dọn.

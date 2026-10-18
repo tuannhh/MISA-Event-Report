@@ -53,3 +53,6 @@ Rollout v6 hoàn tất18/10: app6927de1 trên local8096 và Cloud Run00005-geq,1
 
 ## 18/10/2026 — toolbar đăng ký và mật khẩu ban đầu
 Yêu cầu mới18/10 đã code: bỏ dropdown Tất cả khách khỏi danh sách và chuyển vào bộ lọc desktop/mobile; Nhập khách/Thêm khách lên toolbar desktop. Mật khẩu mặc định tài khoản mới theo chủ dự án, chỉ cấu hình ngoài source; bắt buộc đổi lần đầu, không reset account hiện hữu. Kiểm thử44/44QA đạt. Trạng thái rollout đọc VERIFICATION; native host/thiết bị thật chưa nghiệm thu.
+
+
+18/10/2026 rollout mới nhất: c5223fe trên local8096 và Cloud Run00008-xuk (100%traffic), sync job cùng digest. Default credential cho thành viên/Admin mới dùng Secret Manager member-password version2, local runtime.env cùng giá trị chủ dự án chỉ định. Không ghi secret vào Git; giữ bắt buộc đổi lần đầu và password tài khoản hiện có.44/44testsQA đạt, kiểm tra desktop/mobile browser đạt phạm vi thay đổi. Chi tiếtVERIFICATION; giới hạn native host giữ nguyên.

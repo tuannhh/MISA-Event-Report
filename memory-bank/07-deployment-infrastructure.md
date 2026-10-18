@@ -87,3 +87,6 @@ Cutover dùng trang bảo trì không kết nối DB và pause Scheduler; chờ 
 
 ## 18/10/2026 — v6 global Admin
 Local8096 và Cloud Run revision00005-geq đã chạy app6927de1/schema6;100%traffic. Cloud Build c2c68c1a-57ee-47f5-9720-26e363a67969; digest sha256:0e219d71246e8eb15e218d67bf611130380d00c41487f466f090b5d62819eff0. Managed SQL backup1792319172453 thành công; không tải cloud dump về máy. Sync job cùng image, executionzvkbz thành công; SchedulerENABLED. Không đổi secrets, mật khẩu, public ingress hay volume. Chi tiết đối chiếu ở VERIFICATION; rollback tránh v5 vì không hiểu global admin và còn cho Viewer đọc chi tiết.
+
+
+18/10/2026 rollout mới nhất: c5223fe trên local8096 và Cloud Run00008-xuk (100%traffic), sync job cùng digest. Default credential cho thành viên/Admin mới dùng Secret Manager member-password version2, local runtime.env cùng giá trị chủ dự án chỉ định. Không ghi secret vào Git; giữ bắt buộc đổi lần đầu và password tài khoản hiện có.44/44testsQA đạt, kiểm tra desktop/mobile browser đạt phạm vi thay đổi. Chi tiếtVERIFICATION; giới hạn native host giữ nguyên.
