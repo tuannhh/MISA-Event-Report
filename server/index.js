@@ -1,3 +1,4 @@
+import {adminRoutes} from './admins.js';
 import {registrationRoutes} from './registration-routes.js';
 import {initializeRegistry,mergeImport,upsertSource,participationRows,assignedRows} from './registry.js';
 import {identifiers} from './identifiers.js';
@@ -46,14 +47,15 @@ app.get('/api/me',(req,res)=>res.json({...req.user,model:process.env.GEMINI_MODE
 app.post('/api/logout',async(req,res)=>{await pool.query('DELETE FROM sessions WHERE token=$1',[digest(cookieToken(req))]);res.clearCookie('session');res.json({ok:true});});
 app.post('/api/password',async(req,res)=>{const b=z.object({current:z.string().max(128),password}).parse(req.body);const {rows:[u]}=await pool.query('SELECT password FROM users WHERE id=$1',[req.user.id]);if(b.current===b.password||b.password===process.env.DEFAULT_MEMBER_PASSWORD)fail(400,'Hãy đặt mật khẩu riêng khác mật khẩu ban đầu.');if(!verifyPassword(b.current,u.password))fail(400,'Mật khẩu hiện tại không đúng.');await transaction(async c=>{await c.query('UPDATE users SET password=$1,must_change_password=false WHERE id=$2',[hashPassword(b.password),req.user.id]);await c.query('DELETE FROM sessions WHERE user_id=$1',[req.user.id]);});await createSession(res,req.user.id);res.json({ok:true});});
 app.use('/api',(req,res,next)=>{if(req.user.must_change_password)fail(403,'Bạn phải đổi mật khẩu trước khi sử dụng ứng dụng.');next();});
-app.get('/api/events',async(req,res)=>{const {rows}=await pool.query("SELECT e.id,e.slug,e.name,e.mode,e.event_date,e.active_snapshot_id,e.synced_at,e.sync_error,COALESCE(m.role,'viewer') AS role FROM events e LEFT JOIN members m ON m.event_id=e.id AND m.user_id=$1 ORDER BY e.created_at DESC",[req.user.id]);res.json(rows.map(e=>({...e,role:req.user.global_role==='super_admin'?'super_admin':e.role})));});
-app.post('/api/events',async(req,res)=>{if(req.user.global_role!=='super_admin')fail(403,'Chỉ Super admin được tạo sự kiện.');const b=eventSchema.parse(req.body);const id=randomUUID();const slug=await transaction(async c=>{const slug=await allocateEventSlug(c,b.name);await c.query('INSERT INTO events(id,slug,name,event_date,settings,mode) VALUES($1,$2,$3,$4,$5,$6)',[id,slug,b.name,b.event_date||null,JSON.stringify(defaultSettings()),b.mode]);await c.query('UPDATE events SET registry_initialized=true WHERE id=$1',[id]);await audit(c,id,req.user.id,'event.created');return slug;});res.status(201).json({id,slug});});
+app.get('/api/events',async(req,res)=>{const {rows}=await pool.query("SELECT e.id,e.slug,e.name,e.mode,e.event_date,e.active_snapshot_id,e.synced_at,e.sync_error,COALESCE(m.role,'viewer') AS role FROM events e LEFT JOIN members m ON m.event_id=e.id AND m.user_id=$1 ORDER BY e.created_at DESC",[req.user.id]);res.json(rows.map(e=>({...e,role:['super_admin','admin'].includes(req.user.global_role)?req.user.global_role:e.role})));});
+app.post('/api/events',async(req,res)=>{if(!['super_admin','admin'].includes(req.user.global_role))fail(403,'Chỉ Admin được tạo sự kiện.');const b=eventSchema.parse(req.body);const id=randomUUID();const slug=await transaction(async c=>{const slug=await allocateEventSlug(c,b.name);await c.query('INSERT INTO events(id,slug,name,event_date,settings,mode) VALUES($1,$2,$3,$4,$5,$6)',[id,slug,b.name,b.event_date||null,JSON.stringify(defaultSettings()),b.mode]);await c.query('UPDATE events SET registry_initialized=true WHERE id=$1',[id]);await audit(c,id,req.user.id,'event.created');return slug;});res.status(201).json({id,slug});});
 const read=authorize(),edit=authorize('admin','editor'),owner=authorize('admin');
-app.get('/api/events/:eventId',read,async(req,res)=>{const {rows:[{enabled}]}=await pool.query('SELECT bool_or(enabled) AS enabled FROM event_sources WHERE event_id=$1',[req.event.id]);res.json({...req.event,source:enabled?{enabled:true}:null});});
+app.get('/api/events/:eventId',read,async(req,res)=>{const {rows:[{enabled}]}=await pool.query('SELECT bool_or(enabled) AS enabled FROM event_sources WHERE event_id=$1',[req.event.id]);const {id,slug,name,event_date,mode,role,active_snapshot_id,settings,synced_at}=req.event;res.json({id,slug,name,event_date,mode,role,active_snapshot_id,settings,synced_at,source:enabled?{enabled:true}:null});});
 app.patch('/api/events/:eventId',edit,async(req,res)=>{const b=eventSchema.parse(req.body);await transaction(async c=>{await c.query('UPDATE events SET name=$1,event_date=$2,mode=$3 WHERE id=$4',[b.name,b.event_date||null,b.mode,req.event.id]);await audit(c,req.event.id,req.user.id,'event.updated',b);});res.json({ok:true});});
 app.put('/api/events/:eventId/settings',edit,async(req,res)=>{const settings=settingsSchema.parse(req.body);await transaction(async c=>{await c.query('UPDATE events SET settings=$1 WHERE id=$2',[JSON.stringify(settings),req.event.id]);await audit(c,req.event.id,req.user.id,'settings.updated');});res.json({ok:true});});
-memberRoutes(app,{read,owner,upload});
-registrationRoutes(app,{read,edit,owner});
+adminRoutes(app);
+memberRoutes(app,{read:edit,owner,upload});
+registrationRoutes(app,{read:edit,edit,owner});
 function stageResult(i){const data=i.payload;return {id:i.id,headers:data.headers,sample:data.raw.slice(0,5),count:data.raw.length,mapping:data.mapping,tabs:data.tabs,sheetName:data.sheetName,sourceColumns:[...new Set([...(data.sourceColumns||[]),...guessSourceColumns(data.headers)])].slice(0,12),discovery:data.discovery};}
 async function stage(req,res,data){
   data.importMode=z.enum(['auto','online','offline']).parse(req.body.mode||'auto');data.registrationStatus=z.enum(['invited','registered']).parse(req.body.registrationStatus||'registered');
@@ -108,7 +110,7 @@ app.post('/api/events/:eventId/refresh',read,expensive,async(req,res)=>{
 });
 app.post('/api/events/:eventId/sync',edit,expensive,async(req,res)=>res.json(await syncEvent(req.event.id,req.user.id)));
 app.patch('/api/events/:eventId/source',owner,async(req,res)=>{const {enabled}=z.object({enabled:z.boolean()}).parse(req.body);await pool.query("UPDATE event_sources SET enabled=$1 WHERE event_id=$2 AND kind='sheet'",[enabled,req.event.id]);res.json({ok:true});});
-app.get('/api/events/:eventId/snapshots',read,async(req,res)=>{const {rows}=await pool.query('SELECT id,label,quality,created_at FROM snapshots WHERE event_id=$1 ORDER BY created_at DESC LIMIT 100',[req.event.id]);res.json(rows);});
+app.get('/api/events/:eventId/snapshots',read,async(req,res)=>{const {rows}=await pool.query('SELECT id,label,created_at FROM snapshots WHERE event_id=$1 ORDER BY created_at DESC LIMIT 100',[req.event.id]);res.json(rows);});
 async function snapshot(req){const id=req.query.snapshot?z.string().uuid().parse(req.query.snapshot):req.event.active_snapshot_id;if(!id)return {rows:[],quality:{},id:null};const {rows:[s]}=await pool.query('SELECT * FROM snapshots WHERE id=$1 AND event_id=$2',[id,req.event.id]);if(!s)fail(404,'Không tìm thấy phiên dữ liệu.');return s;}
 const date=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(s=>parseDate(s)!==null);
 function range(req){const b=z.object({from:date.optional(),to:date.optional(),compareFrom:date.optional(),compareTo:date.optional()}).parse(req.query);if((b.from&&b.to&&b.from>b.to)||(b.compareFrom&&b.compareTo&&b.compareFrom>b.compareTo))fail(400,'Ngày bắt đầu phải trước ngày kết thúc.');if(Boolean(b.compareFrom)!==Boolean(b.compareTo))fail(400,'Chọn đủ hai ngày của kỳ so sánh.');return b;}
@@ -134,14 +136,14 @@ async function report(req){
   return {generatedAt:new Date().toISOString(),totalRows:s.rows.length,source:{enabled:!!sourceState.enabled,checkedAt:req.event.synced_at,error:req.event.sync_error},snapshot:{id:s.id,label:s.label,created_at:s.created_at},quality:s.quality,sourceDimensions:sourceBreakdowns(selectRows(s.rows,req.event.settings)),current:summary(r.from,r.to),comparison:r.compareFrom?summary(r.compareFrom,r.compareTo):null,range:r};
 }
 app.get('/api/events/:eventId/report',read,async(req,res)=>res.json(await report(req)));
-app.get('/api/events/:eventId/export.xlsx',read,expensive,async(req,res)=>{
+app.get('/api/events/:eventId/export.xlsx',edit,expensive,async(req,res)=>{
   const selected=req.query.reports===undefined?reportTypes.filter(t=>t!=='targets'):z.array(z.enum(reportTypes)).max(5).parse(z.string().max(100).parse(req.query.reports).split(',').filter(Boolean));
   const data=await report(req),wb=await buildReportWorkbook(req.event,data,selected);
   const buffer=await wb.xlsx.writeBuffer();
   res.set('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.set('Content-Disposition','attachment; filename="MISA-Event-Report.xlsx"');res.send(Buffer.from(buffer));
 });
-app.get('/api/events/:eventId/rows',read,async(req,res)=>res.json(registrationQuery(await assignedRows(pool,req.event.id,(await snapshot(req)).rows,req.user),req.query)));
+app.get('/api/events/:eventId/rows',edit,async(req,res)=>res.json(registrationQuery(await assignedRows(pool,req.event.id,(await snapshot(req)).rows,req.user),req.query)));
 app.post('/api/events/:eventId/insights',read,expensive,async(req,res)=>{
   const data=await report(req);
   // Only precomputed group aggregates go to the model; row-level contacts and staff names stay in the app.
@@ -162,7 +164,7 @@ app.get('/api/events/:eventId/audit',owner,async(req,res)=>{
 app.use('/vendor/chart',express.static(path.resolve('node_modules/chart.js/dist')));
 app.use('/vendor/html2canvas',express.static(path.resolve('node_modules/html2canvas/dist')));
 app.use(express.static(path.resolve('dist')));
-app.get(['/log-in','/su-kien','/change-password'],(req,res)=>res.sendFile(path.resolve('dist/index.html')));
+app.get(['/log-in','/su-kien','/change-password','/thiet-lap-thanh-vien'],(req,res)=>res.sendFile(path.resolve('dist/index.html')));
 app.get(/^\/[^/]+\/(?:tong-quan|du-lieu|nguon-du-lieu|muc-tieu|thanh-vien|nhat-ky)\/?$/,(req,res)=>res.sendFile(path.resolve('dist/index.html')));
 app.use((err,req,res,next)=>{if(res.headersSent)return next(err);let status=err.status||500,message=err.status?err.message:'Đã xảy ra lỗi. Vui lòng thử lại.';if(err instanceof z.ZodError){status=400;message='Dữ liệu không hợp lệ: '+err.issues.map(i=>`${i.path.join('.')}: ${i.message}`).join('; ');}if(err.code==='LIMIT_FILE_SIZE'){status=413;message='File tối đa 10 MB.';}if(err.code==='23505'){status=409;message='Dữ liệu đã tồn tại. Vui lòng tải lại.';}console.error(JSON.stringify({type:'request_error',status,code:err.code||err.name}));res.status(status).json({error:message});});
 await migrate();await bootstrap();

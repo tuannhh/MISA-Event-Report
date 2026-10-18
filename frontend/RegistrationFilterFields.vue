@@ -1,0 +1,5 @@
+<script setup>
+import {s,run,loadRows,callLabel,responseLabel,resetRowFilters} from './store';
+
+const fields=[{key:'call_status',label:'Tình trạng gọi xác nhận'},{key:'position',label:'Chức vụ'},{key:'utm_content',label:'utm_content'},{key:'company',label:'Công ty'},{key:'department',label:'Phòng / nhóm'},{key:'staff_code',label:'Mã nhân viên'},{key:'assignee_name',label:'Người phụ trách'},{key:'contact_response',label:'Phản hồi'}];
+</script><template><div class="grid-form"><label v-for="field in fields" :key="field.key" class="field">{{field.label}}<MCombobox v-model="s.rowFilters[field.key]" multiple :options="(s.rowOptions[field.key]||[]).map(value=>({value,label:field.key==='call_status'?callLabel(value):field.key==='contact_response'?responseLabel(value):value||'Chưa có dữ liệu'}))" placeholder="Tất cả" :aria-label="field.label"/></label><label class="field">Từ ngày submit<MDatePicker v-model="s.rowFrom"/></label><label class="field">Đến ngày submit<MDatePicker v-model="s.rowTo"/></label></div></template>

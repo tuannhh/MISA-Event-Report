@@ -63,3 +63,6 @@ Chưa chốt RPO/RTO, retention nghiệp vụ, cảnh báo/on-call và load test
 
 ## Cutover v5 (18/10/2026)
 Trước migration: backup Cloud SQL thành công, dump riêng ngoài Git, rehearsal trên QA. Pause Scheduler, đợi job cũ hoàn tất; deploy image mới với command `node server/maintenance.js` (503, health200, không DB), rồi chuyển command sang `node server/index.js` để migrate/backfill. Cập nhật job cùng digest, chạy kiểm chứng rồi resume Scheduler. Không thay secret/password/origin/ingress/SQL. Sau khi writer v5 hoạt động, hướng dẫn rollback UI về revision v4 phía trên KHÔNG áp dụng; dùng maintenance + forward-fix hoặc restore/PITR vào DB khác và đối soát.
+
+## Cutover v6 — global Admin
+Migration additive chỉ mở CHECK role, giữ nguyên registrations/snapshots/users/members. Backup Cloud SQL managed trước rollout; không tải DB cloud đầy đủ về local. Deploy revision không traffic, kiểm tra health/UI, chuyển traffic100%; cập nhật sync job cùng digest. Không đổi secret/ingress/IP/password. Không rollback về v5 sau khi cấp global Admin vì v5 không hiểu global role và cho Viewer đọc chi tiết; ưu tiên forward-fix hoặc maintenance. Không restore DB cũ đè dữ liệu người dùng.

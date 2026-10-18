@@ -106,3 +106,9 @@ Các regression cuối: khách đã mời cũng theo mode/ngày/nguồn; nhận 
 - Cloud job `misa-event-report-sync-7vbxb` Completed True,12.76s, cùng digest. Hai nguồn Sheet bật đồng bộ không có lỗi. Scheduler resume5phút/lần.
 - Local8096 build086d7bf, healthy, giữ project/volume misa-event-insights và134khách/119đã gọi. Có backup local trước migration. Không chép database cloud đè local, dữ liệu24/10 được nhập ở cloud.
 - Chưa có ánh xạ tên/mã nhân viên sang tài khoản do chủ dự án xác nhận; Admin dùng Thiết lập → Phân công khách cho thành viên. Không tự đoán quyền từ tên NV. Native host/thiết bị thật và các khoảng trống vận hành đã ghi trước vẫn chưa nghiệm thu.
+
+## 18/10/2026 — UI nhập liệu và quyền Admin toàn app (v6)
+- QA riêng8097, database events_test/tmpfs:44/44 tests, không skip; Vite/Docker build thành công. Integration kiểm tra Viewer403ở rows/contacts/sources/members/imports/conflicts/assignments/audit/export; aggregate report200. Global admin quản lý sự kiện mới/cũ, chỉ Super cấp/thu hồi, thu hồi hiệu lực ngay, giữ editor membership/password, chặn nâng quyền qua event member API.
+- Browser desktop: bộ lọc mở/đóng; sửa công ty và phòng ban của khách QA lưu được; Import mở dialog, chuyển File/Google Sheet; Admin list tải từ menu lẫn reload, form2trường. Mobile390px: form lọc sheet/footer hoạt động; danh sách Admin thành cards.
+- Cloud baseline trước rollout: schema5,2users,221registrations,2contact logs,3pending conflicts; hai active snapshots134/87rows,119/0called. Đây là số đối chiếu tại thời điểm kiểm tra, không phải dữ liệu cố định.
+- Chưa kiểm nghiệm trên native host/thiết bị thật. Không claim full compliance. Rollout cloud/local sẽ bổ sung sau khi xác nhận.

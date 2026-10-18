@@ -2,7 +2,7 @@
 import PagedRecords from './PagedRecords.vue';
 import BrandLogo from './BrandLogo.vue';
 // Event chooser: desktop composition adapted from the MDS ListPage template.
-import {s,filteredEvents,run,openEvent,showEventList,isSuper,roleNames,dateText,number} from './store';
+import {s,filteredEvents,run,openEvent,showEventList,isSuper,canCreateEvent,openAdminSettings,roleNames,dateText,number} from './store';
 import {canEditEvent} from './navigation';
 import {currentHeaderMode} from './mds/theme-state';
 const modes={online:'Online',offline:'Offline',hybrid:'Online và offline'};
@@ -17,7 +17,7 @@ const accessOptions=[{value:'all',label:'Tất cả sự kiện'},{value:'edit',
       @app-switcher="run(()=>showEventList(false))" @logo-click="run(()=>showEventList(false))"><template #logo><BrandLogo/></template><template #search><div class="event-header-picker" :class="{brand:currentHeaderMode==='brand'}"><MCombobox :options="s.events.map(e=>({value:e.id,label:e.name}))" placeholder="Chọn sự kiện" aria-label="Chọn sự kiện" @update:model-value="run(()=>openEvent($event))"/></div></template></MHeaderBar>
     <div class="toolbar shrink-0 px-6 py-4">
       <div><h1>Danh sách sự kiện</h1><p class="muted">Chọn sự kiện để xem báo cáo hoặc chỉnh sửa theo quyền được cấp.</p></div>
-      <MButton v-if="isSuper" variant="primary" @click="s.dialog='new-event'">Tạo sự kiện</MButton>
+      <div class="row"><MButton v-if="isSuper" variant="secondary" @click="openAdminSettings">Thiết lập thành viên</MButton><MButton v-if="canCreateEvent" variant="primary" @click="s.dialog='new-event'">Tạo sự kiện</MButton></div>
     </div>
     <main class="scroll-region px-6 pb-6 stack">
       <div v-if="s.error" role="alert" class="error">{{s.error}}</div>
@@ -34,7 +34,7 @@ const accessOptions=[{value:'all',label:'Tất cả sự kiện'},{value:'edit',
           <div class="row justify-between"><MTag :color="canEditEvent(event)?'brand':'neutral'">{{roleNames[event.role]}}</MTag><span class="muted">{{modes[event.mode]}}</span></div>
           <h2 class="!mb-0 break-words">{{event.name}}</h2>
           <p class="muted row"><MIcon name="calendar" :size="16" />{{dateText(event.event_date)}}</p>
-          <p>{{canEditEvent(event)?'Bạn có quyền chỉnh sửa trong sự kiện này.':'Bạn có quyền xem báo cáo và dữ liệu; không được chỉnh sửa.'}}</p>
+          <p>{{canEditEvent(event)?'Bạn có quyền chỉnh sửa trong sự kiện này.':'Bạn chỉ có quyền xem Tổng quan của sự kiện.'}}</p>
           <div class="mt-auto row justify-end"><MButton variant="secondary" :disabled="s.busy" @click="run(()=>openEvent(event.id))">{{canEditEvent(event)?'Mở sự kiện':'Xem sự kiện'}}</MButton></div>
         </article>
       </div>

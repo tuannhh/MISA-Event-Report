@@ -15,7 +15,7 @@ export function authorize(...roles){return async(req,res,next)=>{
   if(!/^[0-9a-f-]{36}$/i.test(req.params.eventId))fail(404,'Không tìm thấy sự kiện.');
   const {rows}=await pool.query("SELECT e.*,COALESCE(m.role,'viewer') AS role FROM events e LEFT JOIN members m ON m.event_id=e.id AND m.user_id=$2 WHERE e.id=$1",[req.params.eventId,req.user.id]);
   if(!rows[0])fail(404,'Không tìm thấy sự kiện.');
-  if(req.user.global_role==='super_admin')rows[0].role='super_admin';
+  if(['super_admin','admin'].includes(req.user.global_role))rows[0].role=req.user.global_role;
   if(roles.length&&req.user.global_role!=='super_admin'&&!roles.includes(rows[0].role))fail(403,'Bạn không có quyền thực hiện thao tác này.');
   req.event=rows[0];next();
 };}

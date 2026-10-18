@@ -1,7 +1,7 @@
 export const LOGIN_PATH = '/log-in';
 export const EVENTS_PATH = '/su-kien';
 export const PASSWORD_PATH = '/change-password';
-export const eventFeatures = ['tong-quan', 'du-lieu', 'nguon-du-lieu', 'muc-tieu', 'thanh-vien', 'nhat-ky'];
+export const eventFeatures = ['tong-quan', 'du-lieu', 'nguon-du-lieu', 'muc-tieu', 'thanh-vien'];
 
 // A successful login always starts at the event chooser, even from an expired deep link.
 export function destination(pathname, user, afterLogin = false) {
@@ -10,6 +10,7 @@ export function destination(pathname, user, afterLogin = false) {
   if (afterLogin || ['/', LOGIN_PATH, EVENTS_PATH, PASSWORD_PATH].includes(pathname.replace(/\/$/, '') || '/')) {
     return {screen: 'events', path: EVENTS_PATH};
   }
+  if(pathname==='/thiet-lap-thanh-vien'&&user.global_role==='super_admin')return {screen:'admins',path:pathname};
   const parts = pathname.split('/').filter(Boolean);
   if (parts.length === 2 && eventFeatures.includes(parts[1])) {
     return {screen: 'event', slug: parts[0], feature: parts[1]};

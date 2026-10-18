@@ -113,7 +113,7 @@ export async function assignedRows(c,eventId,rows,user){
  const {rows:assignments}=await c.query('SELECT a.code,a.user_id,u.name FROM staff_assignments a JOIN users u ON u.id=a.user_id JOIN members m ON m.user_id=u.id AND m.event_id=a.event_id WHERE a.event_id=$1 AND u.active',[eventId]);
  const map=new Map(assignments.map(a=>[norm(a.code),a]));
  const {rows:[member]}=await c.query('SELECT role FROM members WHERE event_id=$1 AND user_id=$2',[eventId,user.id]);
- const admin=user.global_role==='super_admin'||member?.role==='admin';
+ const admin=['super_admin','admin'].includes(user.global_role)||member?.role==='admin';
  return rows.map(row=>{const assigned=map.get(norm(row.staff_code||row.utm_content||row.tracking));return {...row,assignee_id:assigned?.user_id||null,assignee_name:assigned?.name||'',can_edit:admin||member?.role==='editor'&&assigned?.user_id===user.id};});
 }
 export async function editableRegistration(c,event,rowId,user){

@@ -67,3 +67,7 @@ MUpload: inputRef.click() nổi lên label @click.prevent sẽ bị hủy defaul
 - Không đưa kết quả gọi/ghi chú nhân viên vào fingerprint nhận dạng nguồn. Không dùng default unknown để xóa đã gọi. Không để PATCH từng field làm rỗng phone/tax_id không có trong payload.
 - Dừng writer v4 và Scheduler khi cutover v5; maintenance server không nối DB. Sau v5 chỉ forward-fix hoặc restore vào database khác đã đối soát; không route app v4 vào schema/data mới.
 - Dữ liệu thực có thể thiếu ngày, chức vụ hoặc mục tiêu. Giữ null/rỗng; tuyệt đối không lấy ngày import hoặc chức danh suy đoán bù vào.
+
+
+## 18/10/2026 — quản trị toàn app và luồng dữ liệu
+Admin toàn app phải được kiểm tra ở cả authorize, event list và assignedRows (không chỉ frontend). Không tự promote scoped admin cũ. GET event không serialize nguyên row DB. Không dùng run(load) trong onMounted của trang Admin khi route mở từ run(navigate): busy toàn cục có thể bỏ qua load; load trực tiếp có catch. Khi mở event mới phải xóa cached rows/members trước khi fetch quyền mới.

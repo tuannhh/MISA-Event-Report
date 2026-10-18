@@ -23,3 +23,5 @@ test('event edit labels depend on the role returned for that event',()=>{
   assert.equal(canEditEvent(null),false);
   for(const role of ['editor','admin','super_admin'])assert.equal(canEditEvent({role}),true);
 });
+
+test('global settings are super-only and audit is no longer a visible route',()=>{assert.equal(destination('/thiet-lap-thanh-vien',{...user,global_role:'super_admin'}).screen,'admins');for(const global_role of ['admin','viewer'])assert.equal(destination('/thiet-lap-thanh-vien',{...user,global_role}).screen,'events');assert.equal(destination('/sample-123abc/nhat-ky',user).screen,'events');});

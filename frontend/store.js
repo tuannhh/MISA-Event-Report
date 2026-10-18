@@ -14,10 +14,13 @@ export const responseLabel=value=>responseOptions.find(o=>o.value===value)?.labe
 export const modeLabel=value=>modeOptions.find(o=>o.value===value)?.label||'Chưa xác định';
 export const callLabel=value=>callOptions.find(o=>o.value===value)?.label||'Chưa có dữ liệu';
 export const reports=[{value:'positions',label:'Chức vụ'},{value:'sizes',label:'Quy mô nhân sự'},{value:'trend',label:'Xu hướng đăng ký'},{value:'sources',label:'Nguồn khách & tracking'}];
-export const nav=[{key:'tong-quan',label:'Tổng quan',icon:'home'},{key:'du-lieu',label:'Dữ liệu đăng ký',icon:'list'},{key:'nguon-du-lieu',label:'Nhập & đồng bộ',icon:'upload'},{key:'muc-tieu',label:'Thiết lập sự kiện',icon:'settings'},{key:'thanh-vien',label:'Thành viên',icon:'users'},{key:'nhat-ky',label:'Nhật ký',icon:'clock'}];
+export const nav=[{key:'tong-quan',label:'Tổng quan',icon:'home'},{key:'du-lieu',label:'Dữ liệu đăng ký',icon:'list'},{key:'nguon-du-lieu',label:'Nhập & đồng bộ',icon:'upload'},{key:'muc-tieu',label:'Thiết lập sự kiện',icon:'settings'},{key:'thanh-vien',label:'Thành viên',icon:'users'}];
 export const s=reactive({user:null,ready:false,screen:'events',eventSearch:'',eventAccess:'all',events:[],event:null,route:location.pathname.split('/')[2]||'tong-quan',error:'',message:'',busy:false,reportBusy:false,report:null,snapshots:[],filters:{from:null,to:null,compareFrom:null,compareTo:null,snapshot:'',mode:'all'},sources:{},selected:reports.map(r=>r.value),showPercent:true,exportingImage:false,table:false,reportTab:'chart',dimension:'',members:[],memberPreview:null,rows:[],rowTotal:0,page:1,pageSize:20,rowOptions:{},rowHasTaxId:false,rowFilters:{},rowFrom:null,rowTo:null,rowsBusy:false,query:'',audit:[],stage:null,preview:null,mapping:{},sourceColumns:[],autoSync:true,sheetUrl:'',sheetName:'*',headerRow:'0',importMode:'auto',registrationStatus:'registered',eventSources:[],conflicts:null,contactHistory:[],contactTotal:0,contactPage:1,contactPageSize:20,contactDraft:null,settings:null,eventDraft:null,clevelText:'',insight:null,insightBusy:false,insightError:'',refreshBusy:false,refreshWarning:'',dialog:'',editRow:null,member:{name:'',email:'',role:'editor'},newEvent:{name:'',event_date:null,mode:'hybrid'},appearance:false});
 export const canEdit=computed(()=>['editor','admin','super_admin'].includes(s.event?.role));
 export const canAdmin=computed(()=>['admin','super_admin'].includes(s.event?.role));
+export const visibleNav=computed(()=>canEdit.value?nav:nav.filter(n=>n.key==='tong-quan'));
+export const canCreateEvent=computed(()=>['super_admin','admin'].includes(s.user?.global_role));
+export function openAdminSettings(){if(!isSuper.value)return;clearEvent();s.screen='admins';s.error='';pathTo('/thiet-lap-thanh-vien',true);}
 export const isSuper=computed(()=>s.user?.global_role==='super_admin');
 export const title=computed(()=>nav.find(n=>n.key===s.route)?.label||'Sự kiện');
 export async function api(url,body,method){const response=await fetch(url,{method:method||(body?'POST':'GET'),headers:body instanceof FormData?{}:body?{'Content-Type':'application/json'}:{},body:body instanceof FormData?body:body?JSON.stringify(body):undefined});if(!response.ok){const data=await response.json().catch(()=>({}));if(response.status===401)clearSession();throw Object.assign(Error(data.error||'Không thể xử lý yêu cầu.'),{status:response.status});}return response.json();}
@@ -52,6 +55,7 @@ export async function initialize({afterLogin=false}={}){
 export async function loadEvents({afterLogin=false}={}){
   s.events=await api('/api/events');
   const next=destination(location.pathname,s.user,afterLogin);
+  if(next.screen==='admins'){openAdminSettings();return;}
   if(next.screen==='event'){
     const chosen=s.events.find(e=>e.slug===next.slug);
     if(chosen){s.route=next.feature;await selectEvent(chosen.id,false);return;}
@@ -69,13 +73,13 @@ export const filteredEvents=computed(()=>s.events.filter(e=>{
   const matches=norm(e.name).includes(norm(s.eventSearch.trim()));
   return matches&&(s.eventAccess==='all'||(s.eventAccess==='edit'?canEditEvent(e):!canEditEvent(e)));
 }));
-export async function selectEvent(id,push=true){rowsRequest++;clearTimeout(rowFilterTimer);s.rowFilters={};s.rowFrom=null;s.rowTo=null;s.query='';s.page=1;s.sheetUrl='';s.sheetName='*';s.headerRow='0';s.importMode='auto';s.registrationStatus='registered';s.eventSources=[];s.conflicts=null;s.reportTab='chart';s.table=false;const event=s.events.find(e=>e.id===id);if(!event)return;reportRequest++;insightRequest++;clearTimeout(insightTimer);s.insightBusy=false;s.refreshBusy=false;s.refreshWarning='';s.event=null;s.report=null;s.stage=null;s.preview=null;s.memberPreview=null;resetFilters();s.event=await api('/api/events/'+id);s.screen='event';s.settings=JSON.parse(JSON.stringify(s.event.settings));s.settings.channelTargets??={online:null,offline:null};s.clevelText=s.settings.clevel.join('\n');s.eventDraft={name:s.event.name,event_date:s.event.event_date?new Date(s.event.event_date):null,mode:s.event.mode};s.dimension='';s.selected=s.settings.reports.filter(v=>reports.some(r=>r.value===v));s.snapshots=await api(base()+'/snapshots');
+export async function selectEvent(id,push=true){rowsRequest++;clearTimeout(rowFilterTimer);s.rowFilters={};s.rowFrom=null;s.rowTo=null;s.query='';s.page=1;s.sheetUrl='';s.sheetName='*';s.headerRow='0';s.importMode='auto';s.registrationStatus='registered';s.eventSources=[];s.conflicts=null;s.reportTab='chart';s.table=false;const event=s.events.find(e=>e.id===id);if(!event)return;reportRequest++;insightRequest++;clearTimeout(insightTimer);s.insightBusy=false;s.refreshBusy=false;s.refreshWarning='';s.event=null;s.report=null;s.rows=[];s.members=[];s.stage=null;s.preview=null;s.memberPreview=null;resetFilters();s.event=await api('/api/events/'+id);s.screen='event';s.settings=JSON.parse(JSON.stringify(s.event.settings));s.settings.channelTargets??={online:null,offline:null};s.clevelText=s.settings.clevel.join('\n');s.eventDraft={name:s.event.name,event_date:s.event.event_date?new Date(s.event.event_date):null,mode:s.event.mode};s.dimension='';s.selected=s.settings.reports.filter(v=>reports.some(r=>r.value===v));s.snapshots=await api(base()+'/snapshots');
 if(canEdit.value&&!s.event.active_snapshot_id){
   const pending=await api(base()+'/imports/pending');
   if(pending){await stageImport(pending);if(!s.stage)return;s.route='nguon-du-lieu';}
 }
 await navigate(s.route,push);}
-export async function navigate(route,push=true){if(!nav.some(n=>n.key===route))route='tong-quan';s.route=route;s.error='';s.dialog='';if(s.event){const url='/'+s.event.slug+'/'+route;pathTo(url,push);if(route==='tong-quan'){await loadReport();void refreshLatest();}if(route==='du-lieu'){s.page=1;await loadRows();}if(route==='thanh-vien')await loadMembers();if(route==='nguon-du-lieu')await loadSources();}}
+export async function navigate(route,push=true){if(!visibleNav.value.some(n=>n.key===route))route='tong-quan';s.route=route;s.error='';s.dialog='';if(s.event){const url='/'+s.event.slug+'/'+route;pathTo(url,push);if(route==='tong-quan'){await loadReport();void refreshLatest();}if(route==='du-lieu'){s.page=1;await loadRows();}if(route==='thanh-vien')await loadMembers();if(route==='nguon-du-lieu')await loadSources();}}
 window.addEventListener('popstate',()=>{s.error='';initialize();});
 export async function login(email,password){await api('/api/login',{email:email.trim(),password});await initialize({afterLogin:true});}
 export async function logout(){await api('/api/logout',{});clearSession();}

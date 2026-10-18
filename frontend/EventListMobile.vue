@@ -1,7 +1,7 @@
 <script setup>
 import PagedRecords from './PagedRecords.vue';
 // Separate mobile list composition; no desktop platform header or sidebar.
-import {s,filteredEvents,run,openEvent,showEventList,isSuper,roleNames,dateText,number} from './store';
+import {s,filteredEvents,run,openEvent,showEventList,isSuper,canCreateEvent,roleNames,dateText,number} from './store';
 import {canEditEvent} from './navigation';
 import MMobileTopBar from './mobile/MMobileTopBar.vue';
 const modes={online:'Online',offline:'Offline',hybrid:'Online và offline'};
@@ -10,7 +10,7 @@ const modes={online:'Online',offline:'Offline',hybrid:'Online và offline'};
 <template>
   <div class="mds-mobile-app relative flex h-full flex-col overflow-hidden">
     <MMobileTopBar title="Danh sách sự kiện" :show-back="false" show-more @more="s.dialog='account'">
-      <template #actions><MButton v-if="isSuper" variant="primary" @click="s.dialog='new-event'">Tạo mới</MButton></template>
+      <template #actions><MButton v-if="canCreateEvent" variant="primary" @click="s.dialog='new-event'">Tạo mới</MButton></template>
     </MMobileTopBar>
     <main class="scroll-region page-body stack">
       <div v-if="s.error" role="alert" class="error">{{s.error}}</div>

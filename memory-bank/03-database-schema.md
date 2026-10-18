@@ -131,3 +131,7 @@ Snapshot JSONB mới thêm `utm_content` (đúng cột UTM, không lấy utm_ter
 ## 18/10/2026 — schema v5, hồ sơ khách bền vững
 Migration `server/migrations/20261018_registration_registry.sql` thêm event_sources (nguồn độc lập, mode, config, mục tiêu, thời điểm cập nhật), registrations (UUID, dữ liệu nguồn, overrides do người dùng sửa, version), source_records (khóa dòng nguồn → hồ sơ), contact_logs (lịch sử liên hệ bất biến), staff_assignments (mã nhân viên → thành viên theo event), import_conflicts (đối chiếu danh tính), events.registry_initialized. Khóa ngoại đều gắn event/nguồn/hồ sơ; migration idempotent chạy trong advisory transaction lock.
 Backfill active snapshot dưới event row lock; giữ nguyên các snapshot lịch sử và tài khoản. Khóa dấu vân tay canonical theo từng lần xuất hiện được gieo từ dữ liệu cũ để lần sync đầu không ghép sai các số điện thoại dùng chung. Snapshot mới là projection từ dữ liệu nguồn + overrides; không phải kho hồ sơ gốc. Mỗi cập nhật/import/contact tạo projection mới trong cùng transaction. Schema v5 không tương thích writer v4: không rollback traffic về app cũ sau khi đã ghi v5.
+
+
+## 18/10/2026 — quản trị toàn app và luồng dữ liệu
+Schema v6: migration `20261018_global_admin.sql` mở CHECK users.global_role thành viewer/admin/super_admin, idempotent theo schema_versions. Không cập nhật user/membership/data cũ. Global admin độc lập membership; audit cấp/thu hồi dùng event_id NULL. Không xóa tài khoản hay reset password khi thu hồi.

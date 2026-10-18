@@ -21,15 +21,15 @@ Browser GET `/log-in`, `/su-kien`, `/change-password` trả SPA shell, không tr
 | Route | Quyền | Input / output |
 |---|---|---|
 | GET /api/events | R | Tất cả events + slug/mode/role; không membership là viewer |
-| POST /api/events | S | name,event_date ISO/null,mode online/offline/hybrid;201 id/slug |
+| POST /api/events | Global Admin/S | name,event_date ISO/null,mode online/offline/hybrid;201 id/slug |
 | GET /api/events/:eventId | R | event + settings/source/role |
 | PATCH /api/events/:eventId | E | name,event_date,mode; slug giữ ổn định |
 | PUT /api/events/:eventId/settings | E | target,clevel,dedup,targets,reports |
-| GET /api/events/:eventId/members | R | Danh sách active Admin/Editor |
-| POST /api/events/:eventId/members | A | name,email,role mặc định editor; Admin chỉ editor; Super thêm admin hoặc tạo viewer toàn app |
+| GET /api/events/:eventId/members | E | Danh sách active Admin/Editor |
+| POST /api/events/:eventId/members | A | name,email; chỉ role editor, role admin/viewer bị403 |
 | POST /api/events/:eventId/members/import/preview | A | multipart file10MB, hai cột Họ và tên/Email; max500; rows/errors/total, chưa ghi DB |
 | POST /api/events/:eventId/members/import | A | rows[{name,email,role:editor}]; validate lại + atomic provision; trảcount |
-| PATCH /api/events/:eventId/members/:userId | S | role admin/editor |
+| PATCH /api/events/:eventId/members/:userId | A | Luôn403; dùng /api/admins để cấp Admin toàn app |
 | DELETE /api/events/:eventId/members/:userId | A | Admin chỉ xóa editor; Super xóa admin/editor; không xóa tài khoản |
 
 Settings target0–10.000.000 nguyên, clevel≤40, dedup none/email/phone, targets≤500 gồm group/name/code/target code unique sau norm; reports≤5. Account mới default password env + forced change; existing account không reset password/name. Email MISA và subdomain thật; spoof suffix bị400.
@@ -56,9 +56,9 @@ Prefix `P = /api/events/:eventId`. Tất cả route trong nhóm cần E.
 
 | Method / đường dẫn | Quyền | Input | Output |
 |---|---|---|---|
-| GET `P/snapshots` | R | Không | Tối đa 100 `{id,label,quality,created_at}`, mới trước |
+| GET `P/snapshots` | R | Không | Tối đa 100 `{id,label,created_at}`, mới trước |
 | GET `P/report` | R | query snapshot?, from?, to?, compareFrom?, compareTo? | Report bên dưới |
-| GET `P/rows` | R | query snapshot?, page? ≥1, q? ≤150 ký tự | `{rows,total,page}` 50 dòng/trang, tìm name/company/email/tracking |
+| GET `P/rows` | E | query snapshot?, page? ≥1, q? ≤150 ký tự | `{rows,total,page}` 50 dòng/trang, tìm name/company/email/tracking |
 | PATCH `P/rows/:rowId` | E | `{snapshot,row}` đủ 11 trường chuỗi ≤1.000 | `{id}` snapshot mới; active khác 409; row không có 404; ngày sai 400; dừng sync |
 | POST `P/insights` | R | query cùng report; body không dùng | `{summary,observations,model,snapshot}`; tối đa 8 observations sau kiểm tra schema; Google/model lỗi 403/502/503 |
 | GET `P/audit` | A | Không | 100 bản gần nhất `{action,detail,created_at,name}` |
@@ -110,3 +110,7 @@ Các route dưới `/api/events/:eventId` giữ session, forced-password và quy
 - GET `/conflicts` phân trang20/50/100; POST `/conflicts/:id` {registration_id: UUID hoặc null} để Admin chọn hồ sơ phù hợp hoặc tạo mới.
 - Import thêm mode auto/online/offline, registrationStatus invited/registered; sheetName `*` đọc mọi tab danh sách, headerRow0 tự tìm header. File Editor chỉ nhận khách đã phân công; nguồn Sheet/mục tiêu chỉ Admin. Commit bổ sung/cập nhật, không thay toàn bộ danh sách.
 - Rows thêm lọc mode, registration_status, department, staff_code, assignee_id, contact_response. Report mode online/offline/unknown áp dụng mục tiêu đúng kênh; unknown không có mục tiêu suy đoán.
+
+## 18/10/2026 — quyền toàn app v6
+`GET /api/admins` (Super only) trả[{id,name,email,active}] global Admin; `POST` nhận{name,email}, trả201{id}; email MISA, không reset tài khoản cũ, mới buộc đổi mật khẩu. Trùng Admin/Super hoặc inactive trả409. `DELETE /api/admins/:userId` thu hồi global role về viewer, không xóa account/membership/password; không có Admin hoặc chỉ định Super trả404. Audit admin.granted/admin.revoked với event_id null trong cùng transaction.
+Viewer chỉ dùng overview/report metadata, snapshots và automatic refresh. GET rows, contacts, sources, members và export.xlsx cần E; conflicts/assignments/audit cần A. GET event chỉ trả allowlist metadata/settings, không trả nguyên record DB/config nguồn. Browser `/thiet-lap-thanh-vien` chỉ hiển thị cho Super; server vẫn tự kiểm tra mọi request.
